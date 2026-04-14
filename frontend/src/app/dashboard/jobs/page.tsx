@@ -124,7 +124,7 @@ export default function JobsPage() {
               </svg>
             </div>
             <h3 className="text-lg font-medium text-zinc-900 mb-2">No jobs found</h3>
-            <p className="text-zinc-600">Click "Scrape Jobs" to discover new opportunities</p>
+            <p className="text-zinc-600">Click &quot;Scrape Jobs&quot; to discover new opportunities</p>
           </div>
         ) : (
           <ul className="divide-y divide-zinc-200">

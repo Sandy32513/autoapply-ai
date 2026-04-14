@@ -12,7 +12,7 @@ export async function fetchWithAuth(endpoint: string, options: FetchOptions = {}
   try {
     const { data } = await supabase.auth.getSession();
     token = data?.session?.access_token;
-  } catch (e) {
+  } catch {
     console.warn('No auth session');
   }
 
@@ -48,7 +48,7 @@ export const resumeApi = {
     try {
       const { data } = await supabase.auth.getSession();
       token = data?.session?.access_token;
-    } catch (e) {
+    } catch {
       console.warn('No auth session');
     }
 

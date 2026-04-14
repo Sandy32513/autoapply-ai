@@ -56,7 +56,7 @@ export default function ResumesPage() {
     setMessage(null);
 
     try {
-      const result = await resumeApi.upload(selectedFile);
+      await resumeApi.upload(selectedFile);
       setMessage({ type: 'success', text: 'Resume uploaded successfully!' });
       setSelectedFile(null);
       loadResumes();
