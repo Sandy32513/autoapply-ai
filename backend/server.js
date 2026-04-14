@@ -12,6 +12,7 @@ const jobsRouter = require('./routes/jobs');
 
 const { errorHandler } = require('./middlewares/errorHandler');
 const { apiLimiter } = require('./middlewares/rateLimiter');
+const { auditMiddleware } = require('./services/auditService');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -45,6 +46,9 @@ if (process.env.NODE_ENV !== 'test') {
 // ─── Body Parsing ─────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// ─── Audit Logging ─────────────────────────────────────────────────────────────
+app.use(auditMiddleware);
 
 // ─── Rate Limiting ───────────────────────────────────────────────────────────
 app.use('/api', apiLimiter);

@@ -1,12 +1,23 @@
 const pdf = require('pdf-parse');
 const mammoth = require('mammoth');
 
+const MIN_TEXT_LENGTH = 100;
+
 const parseResume = async (buffer, mimeType) => {
   let text = '';
   
   if (mimeType === 'application/pdf') {
     const result = await pdf(buffer);
     text = result.text;
+    
+    if (!text || text.length < MIN_TEXT_LENGTH) {
+      console.log('Text too short, attempting OCR...');
+      try {
+        text = await extractTextWithOCR(buffer);
+      } catch (ocrError) {
+        console.error('OCR failed:', ocrError.message);
+      }
+    }
   } else if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
     const result = await mammoth.extractRawText({ buffer });
     text = result.value;
@@ -22,6 +33,20 @@ const parseResume = async (buffer, mimeType) => {
   };
 
   return parsed;
+};
+
+const extractTextWithOCR = async (buffer) => {
+  try {
+    const Tesseract = require('tesseract.js');
+    
+    const result = await Tesseract.recognize(buffer, 'eng', {
+      logger: m => console.log(`OCR: ${m.status} - ${Math.round(m.progress * 100)}%`)
+    });
+    
+    return result.data.text;
+  } catch (error) {
+    throw new Error(`OCR failed: ${error.message}`);
+  }
 };
 
 const extractSkills = (text) => {
@@ -98,4 +123,9 @@ const extractEducation = (text) => {
   return education.slice(0, 3);
 };
 
-module.exports = { parseResume };
+module.exports = { 
+  parseResume,
+  extractSkills,
+  extractExperience,
+  extractEducation
+};
