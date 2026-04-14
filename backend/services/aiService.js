@@ -38,6 +38,17 @@ const tailorResume = async (resumeData, jobDescription) => {
     }
   } catch (error) {
     console.error('AI tailoring failed:', error.message);
+    
+    // Fallback: If Ollama fails and OpenAI key exists, try OpenAI
+    if (!USE_OPENAI && OPENAI_API_KEY && error.message.includes('Ollama')) {
+      console.log('Falling back to OpenAI...');
+      try {
+        return await tailorWithOpenAI(resumeText, truncatedJob);
+      } catch (openaiError) {
+        throw new Error(`AI tailoring failed: ${openaiError.message}`);
+      }
+    }
+    
     throw new Error(`AI tailoring failed: ${error.message}`);
   }
 };
