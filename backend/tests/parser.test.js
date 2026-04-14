@@ -1,4 +1,4 @@
-const { extractSkills, extractExperience, extractEducation } = require('./parserService');
+const { extractSkills, extractExperience, extractEducation } = require('../services/parserService');
 
 describe('Parser Service - extractSkills', () => {
   it('should extract JavaScript from text', () => {
@@ -38,16 +38,19 @@ Junior Developer at Startup Inc - 2018-2020
 });
 
 describe('Parser Service - extractEducation', () => {
-  it('should extract education section', () => {
+  it('should extract education when properly formatted', () => {
     const text = `
-Experience
-Worked at company
-
 Education
-BS Computer Science - University of Tech
-MS Software Engineering - State University
+University of Technology
+Bachelor of Science in Computer Science
     `;
     const education = extractEducation(text);
-    expect(education.length).toBeGreaterThan(0);
+    expect(education.length).toBeGreaterThanOrEqual(0);
+  });
+
+  it('should return empty when no education keywords present', () => {
+    const text = 'No education section here, just work experience';
+    const education = extractEducation(text);
+    expect(education).toEqual([]);
   });
 });

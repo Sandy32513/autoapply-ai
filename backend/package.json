@@ -40,6 +40,12 @@
       "**/*.{js,ts}",
       "!**/node_modules/**",
       "!**/coverage/**"
+    ],
+    "transformIgnorePatterns": [
+      "node_modules/(?!(jsdom|@exodus)/)"
+    ],
+    "modulePathIgnorePatterns": [
+      "<rootDir>/node_modules/"
     ]
   }
 }
