@@ -528,6 +528,7 @@ cd frontend && npm run dev
 |----|----------|-------|--------|
 | 1 | 🔴 CRITICAL | Start Apply Flow Missing user_id | ✅ FIXED |
 | 2 | 🔴 CRITICAL | Track Application Missing user_id | ✅ FIXED |
+| 3 | 🔴 CRITICAL | Extension API Calls Not Authenticated | ✅ FIXED |
 | 4 | 🟠 HIGH | Automation Service Browser Leaks | ✅ FIXED |
 | 5 | 🟠 HIGH | Resume Tailor Empty Text Validation | ✅ FIXED |
 | 9 | 🟡 MEDIUM | Login Page Not Working | ✅ FIXED |
@@ -540,14 +541,13 @@ cd frontend && npm run dev
 
 | ID | Severity | Issue | Notes |
 |----|----------|-------|-------|
-| 3 | 🔴 CRITICAL | Extension API Calls Not Authenticated | Requires extension update |
 | 6 | 🟠 HIGH | Job Scraper Source Validation | Minor issue |
 | 7 | 🟠 HIGH | Queue Service Memory Queue | Use Redis in production |
 | 8 | 🟠 HIGH | Missing Pagination in Stats | Performance improvement |
 
 ### 📋 Quick Fix Summary
 
-**Fixed (13 tasks):**
+**Fixed (14 tasks):**
 - ✅ User ID tracking in applications
 - ✅ Login/Register pages functional
 - ✅ Dashboard auth protection
@@ -556,9 +556,9 @@ cd frontend && npm run dev
 - ✅ Input sanitization
 - ✅ OCR configurable
 - ✅ Rate limits configurable
+- ✅ Extension auth token
 
-**Pending (4 tasks):**
-- ⚠️ Extension auth token
+**Pending (3 tasks):**
 - ⚠️ Job scraper validation
 - ⚠️ Queue memory fallback
 - ⚠️ Pagination in stats
@@ -584,7 +584,7 @@ cd frontend && npm run dev
 |---------|-------------|--------|
 | FIX_CRITICAL_001 | Add user_id to startApplyFlow | ✅ DONE |
 | FIX_CRITICAL_002 | Add user_id to trackApplicationStatus | ✅ DONE |
-| FIX_CRITICAL_003 | Extension API auth token | ⚠️ PENDING |
+| FIX_CRITICAL_003 | Extension API auth token | ✅ DONE |
 | FIX_HIGH_001 | Fix browser leak in automationService | ✅ DONE |
 | FIX_HIGH_002 | Validate resume text before tailoring | ✅ DONE |
 | FIX_HIGH_003 | Fix source validation in scraper | ⚠️ PENDING |
@@ -596,8 +596,8 @@ cd frontend && npm run dev
 | FIX_MEDIUM_004 | Sanitize job description input | ✅ DONE |
 | FIX_MEDIUM_005 | Make OCR configurable | ✅ DONE |
 
-### ✅ Completed: 13/17 Tasks
-### ⚠️ Pending: 4/17 Tasks
+### ✅ Completed: 14/17 Tasks
+### ⚠️ Pending: 3/17 Tasks
 ### ⚠️ Pending: 7/17 Tasks (Future Improvements)
 
 | Task | Description |
