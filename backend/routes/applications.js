@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { authenticate } = require('../middlewares/auth');
 const { 
   getApplications, 
   getApplicationById,
@@ -9,6 +10,9 @@ const {
   trackApplicationStatus,
   getApplicationStats
 } = require('../controllers/applicationController');
+
+// All routes require authentication
+router.use(authenticate);
 
 /**
  * POST /api/applications/apply

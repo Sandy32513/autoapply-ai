@@ -6,6 +6,13 @@ interface FetchOptions extends RequestInit {
   headers?: Record<string, string>;
 }
 
+export class ApiError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
 export async function fetchWithAuth(endpoint: string, options: FetchOptions = {}) {
   let token = null;
   
@@ -24,17 +31,25 @@ export async function fetchWithAuth(endpoint: string, options: FetchOptions = {}
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  try {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Request failed' }));
-    throw new Error(error.error || 'Request failed');
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new ApiError(response.status, data.error || 'Request failed');
+    }
+
+    return data;
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new ApiError(0, 'Network error - please check your connection');
   }
-
-  return response.json();
 }
 
 export const resumeApi = {
@@ -60,12 +75,13 @@ export const resumeApi = {
       body: file,
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Upload failed' }));
-      throw new Error(error.error || 'Upload failed');
+      throw new ApiError(response.status, data.error || 'Upload failed');
     }
 
-    return response.json();
+    return data;
   },
 
   tailor: async (resumeId: string, jobDescription: string) => {

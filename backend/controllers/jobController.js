@@ -2,23 +2,31 @@ const { supabase } = require('../config/supabase');
 const { scrapeJobs } = require('../services/scraperService');
 const jobConnector = require('../services/connectors/jobConnector');
 
+const MAX_KEYWORDS_LENGTH = 200;
+const MAX_LOCATION_LENGTH = 200;
+
 const getJobs = async (req, res, next) => {
   try {
     const { page = 1, limit = 20, search = '', location = '', source = '' } = req.query;
-    const offset = (page - 1) * limit;
+    
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 20));
+    const offset = (pageNum - 1) * limitNum;
 
     let query = supabase
       .from('jobs')
       .select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
-      .range(offset, offset + parseInt(limit) - 1);
+      .range(offset, offset + limitNum - 1);
 
     if (search) {
-      query = query.or(`title.ilike.%${search}%,company.ilike.%${search}%,description.ilike.%${search}%`);
+      const sanitizedSearch = search.substring(0, 100);
+      query = query.or(`title.ilike.%${sanitizedSearch}%,company.ilike.%${sanitizedSearch}%,description.ilike.%${sanitizedSearch}%`);
     }
 
     if (location) {
-      query = query.ilike('location', `%${location}%`);
+      const sanitizedLocation = location.substring(0, 100);
+      query = query.ilike('location', `%${sanitizedLocation}%`);
     }
 
     if (source) {
@@ -29,8 +37,9 @@ const getJobs = async (req, res, next) => {
 
     if (error) {
       console.error('Error fetching jobs:', error);
-      return res.json({
-        success: true,
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to fetch jobs',
         jobs: [],
         pagination: { page: 1, limit: 20, total: 0, pages: 0 },
       });
@@ -40,16 +49,17 @@ const getJobs = async (req, res, next) => {
       success: true,
       jobs: data || [],
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
+        page: pageNum,
+        limit: limitNum,
         total: count || 0,
-        pages: Math.ceil((count || 0) / parseInt(limit)),
+        pages: Math.ceil((count || 0) / limitNum),
       },
     });
   } catch (err) {
     console.error('Error:', err);
-    res.json({
-      success: true,
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
       jobs: [],
       pagination: { page: 1, limit: 20, total: 0, pages: 0 },
     });
@@ -93,7 +103,14 @@ const getSources = async (req, res, next) => {
 
 const scrapeAndSaveJobs = async (req, res, next) => {
   try {
-    const { keywords = '', location = '' } = req.body;
+    let { keywords = '', location = '' } = req.body;
+
+    if (keywords && keywords.length > MAX_KEYWORDS_LENGTH) {
+      keywords = keywords.substring(0, MAX_KEYWORDS_LENGTH);
+    }
+    if (location && location.length > MAX_LOCATION_LENGTH) {
+      location = location.substring(0, MAX_LOCATION_LENGTH);
+    }
 
     const jobs = await scrapeJobs(keywords, location);
 
@@ -112,8 +129,6 @@ const scrapeAndSaveJobs = async (req, res, next) => {
       url: job.url,
       description: job.description,
       source: job.source,
-      salary: job.salary || null,
-      job_type: job.jobType || null,
     }));
 
     try {
@@ -142,7 +157,15 @@ const scrapeAndSaveJobs = async (req, res, next) => {
 const scrapeFromSource = async (req, res, next) => {
   try {
     const { source } = req.params;
-    const { keywords = '', location = '', limit = 20 } = req.body;
+    let { keywords = '', location = '', limit = 20 } = req.body;
+
+    if (keywords && keywords.length > MAX_KEYWORDS_LENGTH) {
+      keywords = keywords.substring(0, MAX_KEYWORDS_LENGTH);
+    }
+    if (location && location.length > MAX_LOCATION_LENGTH) {
+      location = location.substring(0, MAX_LOCATION_LENGTH);
+    }
+    limit = Math.min(100, Math.max(1, parseInt(limit) || 20));
     
     const availableSources = jobConnector.getAvailableSources();
     
@@ -162,8 +185,6 @@ const scrapeFromSource = async (req, res, next) => {
       url: job.url,
       description: job.description,
       source: job.source,
-      salary: job.salary || null,
-      job_type: job.jobType || null,
     }));
     
     if (jobsToInsert.length > 0) {

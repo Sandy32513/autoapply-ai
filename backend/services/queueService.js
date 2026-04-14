@@ -3,6 +3,7 @@ const Queue = require('bull');
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 
 let applicationQueue;
+let isRedisAvailable = false;
 
 try {
   applicationQueue = new Queue('apply-queue', REDIS_URL, {
@@ -25,9 +26,16 @@ try {
     console.log(`Job ${job.id} completed successfully`);
   });
 
+  applicationQueue.on('error', (err) => {
+    console.error('Queue connection error:', err.message);
+    isRedisAvailable = false;
+  });
+
+  isRedisAvailable = true;
   console.log('Queue connected to Redis');
 } catch (error) {
   console.warn('Redis not available, using memory queue fallback');
+  isRedisAvailable = false;
   
   const { EventEmitter } = require('events');
   class MemoryQueue extends EventEmitter {
@@ -42,12 +50,19 @@ try {
       return job;
     }
     async process() {}
+    async getJobCounts() {
+      return { waiting: 0, active: 0, completed: this.jobs.length, failed: 0 };
+    }
   }
   
   applicationQueue = new MemoryQueue();
 }
 
 const addApplicationJob = async (applicationId, jobUrl, resumeData) => {
+  if (!applicationQueue) {
+    throw new Error('Queue not initialized');
+  }
+  
   try {
     const job = await applicationQueue.add({
       applicationId,
@@ -66,6 +81,9 @@ const addApplicationJob = async (applicationId, jobUrl, resumeData) => {
 
 const getQueueStatus = async () => {
   try {
+    if (!applicationQueue || !isRedisAvailable) {
+      return { waiting: 0, active: 0, completed: 0, failed: 0 };
+    }
     const counts = await applicationQueue.getJobCounts();
     return {
       waiting: counts.waiting || 0,

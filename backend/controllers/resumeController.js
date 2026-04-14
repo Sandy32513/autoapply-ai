@@ -7,33 +7,47 @@ const MAX_JOB_DESCRIPTION_LENGTH = 5000;
 
 const getResumes = async (req, res, next) => {
   try {
-    const { data, error } = await supabase
+    const userId = req.user?.id;
+    
+    let query = supabase
       .from('resumes')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(50);
 
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+
+    const { data, error } = await query;
+
     if (error) {
       console.error('Supabase error:', error);
-      return res.json({ success: true, resumes: [] });
+      return res.status(500).json({ success: false, error: 'Failed to fetch resumes', resumes: [] });
     }
 
     res.json({ success: true, resumes: data || [] });
   } catch (err) {
     console.error('Error:', err);
-    res.json({ success: true, resumes: [] });
+    res.status(500).json({ success: false, error: 'Internal server error', resumes: [] });
   }
 };
 
 const getResumeById = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const userId = req.user?.id;
     
-    const { data, error } = await supabase
+    let query = supabase
       .from('resumes')
       .select('*')
-      .eq('id', id)
-      .single();
+      .eq('id', id);
+
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+
+    const { data, error } = await query.single();
 
     if (error || !data) {
       return res.status(404).json({ success: false, error: 'Resume not found' });
@@ -82,9 +96,12 @@ const uploadResume = async (req, res, next) => {
       console.error('Parse error:', parseError);
     }
 
+    const userId = req.user?.id || null;
+
     const { data: dbData, error: dbError } = await supabase
       .from('resumes')
       .insert({
+        user_id: userId,
         file_url: fileUrl,
         file_name: req.file.originalname,
         parsed_data: parsedData,
@@ -94,11 +111,12 @@ const uploadResume = async (req, res, next) => {
 
     if (dbError) {
       console.error('Database insert error:', dbError);
+      return res.status(500).json({ success: false, error: 'Failed to save resume' });
     }
 
     res.status(201).json({
       success: true,
-      resume: dbData || { id: 'temp-' + Date.now(), file_name: req.file.originalname },
+      resume: dbData,
     });
   } catch (err) {
     next(err);
@@ -108,6 +126,7 @@ const uploadResume = async (req, res, next) => {
 const tailorResumeHandler = async (req, res, next) => {
   try {
     const { resumeId, jobDescription } = req.body;
+    const userId = req.user?.id;
 
     if (!resumeId) {
       return res.status(400).json({ success: false, error: 'Resume ID is required' });
@@ -131,17 +150,40 @@ const tailorResumeHandler = async (req, res, next) => {
       console.error('Error fetching resume:', e);
     }
 
+    if (!resume) {
+      return res.status(404).json({ success: false, error: 'Resume not found' });
+    }
+
     let tailoredContent = '';
     try {
       tailoredContent = await tailorResume(resume, truncatedJob);
     } catch (aiError) {
       console.error('AI Error:', aiError);
-      tailoredContent = 'Failed to generate tailored resume. Please check that Ollama is running on localhost:11434';
+      return res.status(503).json({ success: false, error: 'AI service unavailable. Please check Ollama or OpenAI configuration.' });
+    }
+
+    let tailoredRecord = null;
+    if (userId) {
+      const { data: tailoredData, error: tailoredError } = await supabase
+        .from('tailored_resumes')
+        .insert({
+          user_id: userId,
+          resume_id: resumeId,
+          job_description: truncatedJob,
+          tailored_output: tailoredContent,
+        })
+        .select()
+        .single();
+
+      if (!tailoredError) {
+        tailoredRecord = tailoredData;
+      }
     }
 
     res.json({
       success: true,
-      tailored: {
+      tailored: tailoredRecord || {
+        id: 'temp-' + Date.now(),
         resume_id: resumeId,
         job_description: truncatedJob,
         tailored_output: tailoredContent,
@@ -156,7 +198,26 @@ const tailorResumeHandler = async (req, res, next) => {
 
 const getTailoredResumes = async (req, res, next) => {
   try {
-    res.json({ success: true, tailored_resumes: [] });
+    const userId = req.user?.id;
+    
+    let query = supabase
+      .from('tailored_resumes')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching tailored resumes:', error);
+      return res.status(500).json({ success: false, error: 'Failed to fetch tailored resumes' });
+    }
+
+    res.json({ success: true, tailored_resumes: data || [] });
   } catch (err) {
     next(err);
   }

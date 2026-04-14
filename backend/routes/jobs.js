@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
+const { authenticate } = require('../middlewares/auth');
 const { getJobs, getJobById, scrapeAndSaveJobs, scrapeFromSource, getSources } = require('../controllers/jobController');
+
+// All routes require authentication
+router.use(authenticate);
 
 /**
  * GET /api/jobs

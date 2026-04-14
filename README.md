@@ -522,28 +522,180 @@ cd frontend && npm run dev
 
 ## Known Bugs & Issues
 
-### Current Issues
+### CRITICAL SEVERITY
 
-1. **Ollama Model Compatibility**
+1. **Hardcoded API Keys in .env File**
+   - **Issue:** Production API keys exposed in `backend/.env`
+   - **Severity:** CRITICAL
+   - **Risk:** Complete account compromise, unauthorized access
+   - **Fix:** Regenerate keys immediately at Supabase and OpenAI dashboards, rotate credentials
+   - **Task:** FIX_CRITICAL_001 - Regenerate all exposed API keys
+
+2. **No Authentication on Most Backend Routes**
+   - **Issue:** Routes `/api/resumes`, `/api/jobs`, `/api/applications` have no auth middleware
+   - **Severity:** CRITICAL
+   - **Risk:** Unauthenticated users can access/modify all data
+   - **Fix:** Add `authenticate` middleware to all protected routes
+   - **Task:** FIX_CRITICAL_002 - Add authentication middleware to all API routes
+
+3. **Missing CORS Validation**
+   - **Issue:** CORS allows wildcard in some scenarios, no strict origin validation
+   - **Severity:** CRITICAL
+   - **Risk:** Cross-site request forgery attacks
+   - **Fix:** Strict CORS configuration, remove hardcoded production origins
+   - **Task:** FIX_CRITICAL_003 - Implement strict CORS validation
+
+---
+
+### HIGH SEVERITY
+
+4. **Resume Upload Has No User Association**
+   - **Issue:** Resume uploads don't track which user uploaded them
+   - **Severity:** HIGH
+   - **Risk:** Data integrity issues, privacy violation
+   - **Fix:** Add `user_id` field to resume uploads, require auth
+   - **Task:** FIX_HIGH_001 - Add user ownership to resumes
+
+5. **Application Status Not Saved to Database**
+   - **Issue:** AI tailoring saves nothing to `tailored_resumes` table
+   - **Severity:** HIGH
+   - **Data Loss:** Tailored resumes lost on page refresh
+   - **Fix:** Save tailored content to database
+   - **Task:** FIX_HIGH_002 - Persist tailored resumes to database
+
+6. **No Input Validation on Job Scraping**
+   - **Issue:** No validation on `keywords`/`location` params in scrape endpoints
+   - **Severity:** HIGH
+   - **Risk:** Injection attacks, resource exhaustion
+   - **Fix:** Add input sanitization and length limits
+   - **Task:** FIX_HIGH_003 - Add input validation to scraping endpoints
+
+7. **Error Handling Returns 200 on Errors**
+   - **Issue:** Controllers return `res.json({ success: true, ... })` on errors
+   - **Severity:** HIGH
+   - **Risk:** Frontend cannot detect errors properly
+   - **Fix:** Return proper HTTP status codes (400, 404, 500)
+   - **Task:** FIX_HIGH_004 - Fix error response status codes
+
+8. **Middleware Import Error**
+   - **Issue:** `server.js` imports non-existent middleware files
+   - **Severity:** HIGH
+   - **Risk:** Server won't start
+   - **Fix:** Create missing middleware or remove imports
+   - **Task:** FIX_HIGH_005 - Fix middleware imports
+
+---
+
+### MEDIUM SEVERITY
+
+9. **Ollama Model Compatibility**
    - **Issue:** `llama3.2` and vision models show "Cannot read image" error
-   - **Severity:** Medium
-   - **Fix:** Use `llama3.1` (text-only) model in `.env`:
+   - **Severity:** MEDIUM
+   - **Fix:** Use `llama3.1` in `.env`:
      ```
      OLLAMA_MODEL=llama3.1
      ```
-   - Then run: `ollama pull llama3.1`
+   - **Task:** FIX_MEDIUM_001 - Document Ollama model requirements
 
-### Potential Future Issues
-1. **PDF Parsing** - Scanned PDFs (images) won't parse correctly
-2. **Rate Limiting** - IP-based limiting may affect shared networks
-3. **Session Timeouts** - JWT refresh not implemented
+10. **No Session Refresh Mechanism**
+    - **Issue:** JWT tokens never refresh, users logged out after expiration
+    - **Severity:** MEDIUM
+    - **Risk:** Poor UX, forced re-login
+    - **Fix:** Implement token refresh in frontend AuthContext
+    - **Task:** FIX_MEDIUM_002 - Add JWT refresh handling
 
-### Pending Tasks
-1. **HIGH:** Test Ollama integration with llama3.1 model
-2. **HIGH:** Add session refresh mechanism for JWT
-3. **MEDIUM:** Add unit tests for controllers
-4. **MEDIUM:** Implement scraped job data handling
-5. **LOW:** Add E2E tests with Playwright
+11. **Missing Middleware Security Headers**
+    - **Issue:** Helmet imported but not used in middleware chain
+    - **Severity:** MEDIUM
+    - **Risk:** Missing security headers (X-Frame-Options, etc.)
+    - **Fix:** Add `helmet()` to Express middleware
+    - **Task:** FIX_MEDIUM_003 - Enable security headers
+
+12. **Database Schema Mismatch**
+    - **Issue:** `jobs` table has columns not in SQL (`salary`, `job_type`)
+    - **Severity:** MEDIUM
+    - **Risk:** Data insertion failures
+    - **Fix:** Update SQL schema to match code
+    - **Task:** FIX_MEDIUM_004 - Sync database schema
+
+13. **Chrome Extension API URL Hardcoded**
+    - **Issue:** Extension calls `localhost:5000`, won't work in production
+    - **Severity:** MEDIUM
+    - **Risk:** Extension unusable in production
+    - **Fix:** Make API URL configurable or detect environment
+    - **Task:** FIX_MEDIUM_005 - Fix extension production URL
+
+14. **No Pagination Validation**
+    - **Issue:** `page`/`limit` params not validated (negative numbers, etc.)
+    - **Severity:** MEDIUM
+    - **Risk:** Unexpected behavior
+    - **Fix:** Add bounds checking on pagination params
+    - **Task:** FIX_MEDIUM_006 - Validate pagination parameters
+
+---
+
+### LOW SEVERITY
+
+15. **PDF Parsing - Scanned Documents**
+    - **Issue:** Scanned PDFs (images) won't parse correctly
+    - **Severity:** LOW
+    - **Fix:** Use OCR (Tesseract) for scanned PDFs
+    - **Task:** FIX_LOW_001 - Add OCR support for scanned PDFs
+
+16. **IP-based Rate Limiting**
+    - **Issue:** Rate limiting affects shared networks
+    - **Severity:** LOW
+    - **Fix:** Consider user-based rate limiting
+    - **Task:** FIX_LOW_001 - Implement user-based rate limiting
+
+17. **No Unit Tests**
+    - **Issue:** No test suite configured
+    - **Severity:** LOW
+    - **Fix:** Add Jest/Vitest for unit tests
+    - **Task:** FIX_LOW_003 - Add test framework
+
+18. **Frontend Middleware Does Nothing**
+    - **Issue:** `middleware.ts` just returns `NextResponse.next()`
+    - **Severity:** LOW
+    - **Fix:** Implement route protection if needed
+    - **Task:** FIX_LOW_004 - Implement frontend middleware
+
+19. **Missing Error Handling in Frontend API**
+    - **Issue:** `fetchWithAuth` doesn't handle network errors gracefully
+    - **Severity:** LOW
+    - **Fix:** Add try/catch, proper error messages
+    - **Task:** FIX_LOW_005 - Improve frontend error handling
+
+---
+
+### Pending Tasks Summary
+
+#### Critical (Must Fix)
+- [ ] FIX_CRITICAL_001: Regenerate exposed API keys
+- [ ] FIX_CRITICAL_002: Add authentication to all API routes
+- [ ] FIX_CRITICAL_003: Implement strict CORS validation
+
+#### High Priority
+- [ ] FIX_HIGH_001: Add user ownership to resumes
+- [ ] FIX_HIGH_002: Persist tailored resumes to database
+- [ ] FIX_HIGH_003: Add input validation to scraping endpoints
+- [ ] FIX_HIGH_004: Fix error response status codes
+- [ ] FIX_HIGH_005: Fix middleware imports
+
+#### Medium Priority
+- [ ] FIX_MEDIUM_001: Document Ollama model requirements
+- [ ] FIX_MEDIUM_002: Add JWT refresh handling
+- [ ] FIX_MEDIUM_003: Enable security headers
+- [ ] FIX_MEDIUM_004: Sync database schema
+- [ ] FIX_MEDIUM_005: Fix extension production URL
+- [ ] FIX_MEDIUM_006: Validate pagination parameters
+
+#### Low Priority
+- [ ] FIX_LOW_001: Add OCR support for scanned PDFs
+- [ ] FIX_LOW_002: Implement user-based rate limiting
+- [ ] FIX_LOW_003: Add test framework
+- [ ] FIX_LOW_004: Implement frontend middleware
+- [ ] FIX_LOW_005: Improve frontend error handling
 
 ---
 
@@ -551,12 +703,18 @@ cd frontend && npm run dev
 
 | Service | Status |
 |--------|--------|
-| Supabase | Using free tier - no direct rate limits |
-| OpenAI | Configured (USE_OPENAI=true) |
+| Supabase | API key EXPOSED - MUST REGENERATE |
+| OpenAI | API key EXPOSED - MUST REGENERATE |
 | Ollama | Optional - local usage |
 | Redis | Local - unlimited usage |
 
-**Status:** Credits not running low. All services are either free tier (Supabase) or self-hosted local instances.
+**STATUS: CRITICAL - API keys exposed in repository**
+
+**Action Required:**
+1. Regenerate Supabase API keys at: https://supabase.com/dashboard/project/vmqqlfovlzvhoskzkvkf/settings/api
+2. Regenerate OpenAI keys at: https://platform.openai.com/api-keys
+3. Update `backend/.env` with new keys
+4. NEVER commit real keys to repository
 
 ---
 

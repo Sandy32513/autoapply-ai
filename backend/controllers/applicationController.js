@@ -6,13 +6,16 @@ const autofillService = require('../services/autofillService');
 const getApplications = async (req, res, next) => {
   try {
     const { page = 1, limit = 20, status } = req.query;
-    const offset = (page - 1) * limit;
+    
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 20));
+    const offset = (pageNum - 1) * limitNum;
     
     let query = supabase
       .from('applications')
       .select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
-      .range(offset, offset + parseInt(limit) - 1);
+      .range(offset, offset + limitNum - 1);
     
     if (status) {
       query = query.eq('status', status);
@@ -26,15 +29,15 @@ const getApplications = async (req, res, next) => {
       success: true, 
       applications: data || [],
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
+        page: pageNum,
+        limit: limitNum,
         total: count || 0,
-        pages: Math.ceil((count || 0) / parseInt(limit)),
+        pages: Math.ceil((count || 0) / limitNum),
       }
     });
   } catch (err) {
     console.error('Error fetching applications:', err);
-    res.json({ success: true, applications: [] });
+    res.status(500).json({ success: false, error: 'Failed to fetch applications', applications: [] });
   }
 };
 
@@ -136,7 +139,7 @@ const getQueueInfo = async (req, res, next) => {
     const status = await getQueueStatus();
     res.json({ success: true, queue: status });
   } catch (err) {
-    res.json({ success: true, queue: { waiting: 0, active: 0, completed: 0, failed: 0 } });
+    res.status(500).json({ success: false, error: 'Failed to get queue status' });
   }
 };
 
