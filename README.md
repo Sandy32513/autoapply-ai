@@ -587,11 +587,11 @@ cd frontend && npm run dev
 | FIX_HIGH_005 | Add pagination to getApplicationStats | ⚠️ PENDING |
 | FIX_MEDIUM_001 | Implement actual login page | ✅ DONE |
 | FIX_MEDIUM_002 | Add auth check to dashboard | ✅ DONE |
-| FIX_MEDIUM_003 | Make rate limits configurable | ⚠️ PENDING |
+| FIX_MEDIUM_003 | Make rate limits configurable | ✅ DONE |
 | FIX_MEDIUM_004 | Sanitize job description input | ✅ DONE |
 | FIX_MEDIUM_005 | Make OCR configurable | ✅ DONE |
 
-### ✅ Completed: 12/17 Tasks
+### ✅ Completed: 13/17 Tasks
 ### ⚠️ Pending: 7/17 Tasks (Future Improvements)
 
 | Task | Description |
