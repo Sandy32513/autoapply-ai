@@ -570,6 +570,48 @@ OLLAMA_URL=http://localhost:11434
 OLLAMA_MODEL=llama3.1
 ```
 
+---
+
+## Security & Key Management
+
+### NEVER commit secrets!
+
+| File | What to Store |
+|------|------------|
+| `.env` | Real API keys, tokens, passwords |
+| `.env.local` | Real Supabase keys |
+| `*.pem` | Private keys/certificates |
+
+### Always Use Placeholders
+
+```bash
+# BAD - real key in repo
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOi...realKey
+
+# GOOD - placeholder
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+```
+
+### GitHub Email Protection
+
+1. Go to https://github.com/settings/emails
+2. Uncheck "Keep my email address private" OR use noreply email
+3. Set globally:
+   ```bash
+   git config --global user.email "your-noreply@users.noreply.github.com"
+   ```
+
+### If Keys Are Exposed
+
+1. **Immediate action:** Rotate exposed keys in respective service
+2. **For Supabase:** Regenerate in Dashboard → Settings → API
+3. **For OpenAI:** Regenerate at https://platform.openai.com/api-keys
+4. **Force-push clean commit:**
+   ```bash
+   git commit --amend --author="YourName <your-noreply@users.noreply.github.com>" --no-edit
+   git push --force-with-lease origin main
+   ```
+
 ### Quick Start
 
 ```bash
