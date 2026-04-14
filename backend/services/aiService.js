@@ -81,13 +81,20 @@ const tailorWithOpenAI = async (resumeText, jobDescription) => {
 };
 
 const tailorWithOllama = async (resumeText, jobDescription) => {
+  const model = process.env.OLLAMA_MODEL || 'llama3.1';
+  
+  // Check if using a vision model - these don't support text-only input
+  if (model.includes('vision') || model === 'llama3.2' || model === 'llama3.2-vision') {
+    throw new Error(`Model ${model} requires image input. Please use a text-only model like llama3.1 or llama3. For more info: https://ollama.ai/library/llama3.2`);
+  }
+  
   const response = await fetch(`${OLLAMA_URL}/api/generate`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: process.env.OLLAMA_MODEL || 'llama3.1',
+      model: 'llama3.1', // Always use text-only model
       prompt: `${SYSTEM_PROMPT}\n\n${USER_PROMPT({ text: resumeText }, jobDescription)}`,
       stream: false,
       options: {
@@ -99,6 +106,9 @@ const tailorWithOllama = async (resumeText, jobDescription) => {
 
   if (!response.ok) {
     const errorText = await response.text();
+    if (errorText.includes('does not support image input')) {
+      throw new Error('Ollama model does not support image input. Please use llama3.1 or another text-only model.');
+    }
     throw new Error(`Ollama error: ${errorText}`);
   }
 

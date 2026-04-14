@@ -525,10 +525,13 @@ cd frontend && npm run dev
 ### Current Issues
 
 1. **Ollama Model Compatibility**
-   - **Issue:** `llama3.2` vision models show "Cannot read image" error
+   - **Issue:** `llama3.2` and vision models show "Cannot read image" error
    - **Severity:** Medium
-   - **Workaround:** Use `llama3.1` (text-only) model or switch to OpenAI
-   - **Fix:** Change `.env` `OLLAMA_MODEL=llama3.1` and run `ollama pull llama3.1`
+   - **Fix:** Use `llama3.1` (text-only) model in `.env`:
+     ```
+     OLLAMA_MODEL=llama3.1
+     ```
+   - Then run: `ollama pull llama3.1`
 
 ### Potential Future Issues
 1. **PDF Parsing** - Scanned PDFs (images) won't parse correctly
