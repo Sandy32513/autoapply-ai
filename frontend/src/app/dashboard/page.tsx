@@ -35,7 +35,7 @@ export default function DashboardPage() {
       href: '/dashboard/resumes',
       icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
       color: '#6366f1',
-      bg: '#f5f3ff',
+      bg: '#eef2ff',
     },
     {
       title: 'Applications',
@@ -77,33 +77,34 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="animate-fadeIn">
+    <div className="animate-fadeInUp">
+      {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold" style={{ color: 'var(--foreground)' }}>Dashboard</h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>AI-powered job application automation</p>
+        <h1 className="text-3xl font-bold" style={{ color: 'var(--foreground)' }}>Welcome back! 👋</h1>
+        <p className="text-base mt-2" style={{ color: 'var(--muted)' }}>AI-powered job application automation</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {cards.map((card, index) => (
           <Link
             key={card.title}
             href={card.href}
-            className="premium-card p-6"
-            style={{ animationDelay: `${index * 0.1}s` }}
+            className={`glass-card stat-card p-6 stagger-${index + 1}`}
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between relative z-10">
               <div>
                 <p className="text-sm font-medium" style={{ color: 'var(--muted)' }}>{card.title}</p>
-                <div className="mt-2 text-3xl font-bold" style={{ color: 'var(--foreground)' }}>
+                <div className="mt-2 text-4xl font-bold" style={{ color: 'var(--foreground)' }}>
                   {loading ? '...' : card.value}
                 </div>
               </div>
               <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center"
+                className="w-14 h-14 rounded-2xl flex items-center justify-center"
                 style={{ background: card.bg }}
               >
                 <svg
-                  className="w-6 h-6"
+                  className="w-7 h-7"
                   fill="none"
                   stroke={card.color}
                   strokeWidth={1.5}
@@ -113,7 +114,7 @@ export default function DashboardPage() {
                 </svg>
               </div>
             </div>
-            <div className="mt-4 flex items-center text-sm" style={{ color: card.color }}>
+            <div className="mt-5 flex items-center text-sm font-medium" style={{ color: card.color }}>
               <span>View {card.title.toLowerCase()}</span>
               <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -123,25 +124,25 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <div className="mt-8">
-        <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--foreground)' }}>Quick Actions</h2>
+      {/* Quick Actions */}
+      <div className="mt-10">
+        <h2 className="text-xl font-semibold mb-5" style={{ color: 'var(--foreground)' }}>Quick Actions</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {actions.map((action) => (
+          {actions.map((action, index) => (
             <Link
               key={action.title}
               href={action.href}
-              className="premium-card p-5 flex items-center gap-4 hover:border-primary"
+              className={`glass-card p-5 flex items-center gap-4 glow stagger-${index + 1}`}
             >
               <div
-                className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ background: 'var(--accent)' }}
+                className="icon-box"
               >
                 <svg className="w-5 h-5" fill="none" stroke="var(--primary)" strokeWidth={2} viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d={action.icon} />
                 </svg>
               </div>
               <div>
-                <p className="font-medium" style={{ color: 'var(--foreground)' }}>{action.title}</p>
+                <p className="font-semibold" style={{ color: 'var(--foreground)' }}>{action.title}</p>
                 <p className="text-xs" style={{ color: 'var(--muted)' }}>{action.desc}</p>
               </div>
             </Link>
@@ -149,20 +150,29 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="mt-8 premium-card p-6">
+      {/* Pro Tip Card */}
+      <div className="mt-8 glass-card p-6 stagger-4">
         <div className="flex items-center justify-between">
-          <div>
-            <h3 className="font-semibold" style={{ color: 'var(--foreground)' }}>Pro Tip</h3>
-            <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
-              Use AI Tailor to optimize your resume for each job application for better results.
-            </p>
-          </div>
-          <div className="w-12 h-12 rounded-full gradient-bg flex items-center justify-center">
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M18.258 15a3.5 3.5 0 10-4.968-4.488A3.5 3.5 0 0014.258 7.5 3.5 3.5 0 00-3.488 4.663m1.257 4.837a3.5 3.5 0 104.488-1.988 3.5 3.5 0 00-1.488 4.488" />
-            </svg>
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl gradient-bg flex items-center justify-center shadow-lg">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M18.258 15a3.5 3.5 0 10-4.968-4.488A3.5 3.5 0 0014.258 7.5 3.5 3.5 0 00-3.488 4.663m1.257 4.837a3.5 3.5 0 104.488-1.988 3.5 3.5 0 00-1.488 4.488" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="font-semibold" style={{ color: 'var(--foreground)' }}>Pro Tip</h3>
+              <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
+                Use AI Tailor to optimize your resume for each job application for better results.
+              </p>
+            </div>
           </div>
         </div>
+      </div>
+
+      {/* Background decoration */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+        <div className="absolute top-1/4 -right-32 w-96 h-96 rounded-full" style={{ background: 'radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%)' }} />
+        <div className="absolute bottom-1/4 -left-32 w-96 h-96 rounded-full" style={{ background: 'radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%)' }} />
       </div>
     </div>
   );
