@@ -5,6 +5,16 @@ const { tailorResume } = require('../services/aiService');
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_JOB_DESCRIPTION_LENGTH = 5000;
 
+const sanitizeInput = (input) => {
+  if (!input || typeof input !== 'string') return '';
+  return input
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<[^>]*>/g, '')
+    .replace(/javascript:/gi, '')
+    .replace(/on\w+\s*=/gi, '')
+    .trim();
+};
+
 const getResumes = async (req, res, next) => {
   try {
     const userId = req.user?.id;
@@ -145,7 +155,8 @@ const tailorResumeHandler = async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'Job description is required' });
     }
 
-    const truncatedJob = jobDescription.substring(0, MAX_JOB_DESCRIPTION_LENGTH);
+    const sanitizedJob = sanitizeInput(jobDescription);
+    const truncatedJob = sanitizedJob.substring(0, MAX_JOB_DESCRIPTION_LENGTH);
 
     let resume = null;
     try {
