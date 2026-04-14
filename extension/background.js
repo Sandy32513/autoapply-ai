@@ -1,5 +1,5 @@
 const AUTOAPPLY_CONFIG = {
-  API_URL: null, // Will be loaded from chrome.storage.local
+  API_URL: null,
   RATE_LIMIT: {
     maxActionsPerHour: 20,
     cooldownMinutes: 30,
@@ -10,8 +10,37 @@ const AUTOAPPLY_CONFIG = {
   STATS_KEY: 'autoapply_stats',
 };
 
-function getApiUrl() {
-  return 'http://localhost:5000/api';
+const DEFAULT_RATE_LIMIT = {
+  maxActionsPerHour: 20,
+  cooldownMinutes: 30,
+};
+
+const loadConfigFromStorage = (callback) => {
+  chrome.storage.local.get(['autoapply_settings'], (result) => {
+    const settings = result.autoapply_settings || {};
+    
+    const config = {
+      apiUrl: settings.apiUrl || 'http://localhost:5000',
+      rateLimit: {
+        maxActionsPerHour: settings.maxActionsPerHour || DEFAULT_RATE_LIMIT.maxActionsPerHour,
+        cooldownMinutes: settings.cooldownMinutes || DEFAULT_RATE_LIMIT.cooldownMinutes,
+      }
+    };
+    
+    callback(config);
+  });
+};
+
+function getApiUrl(callback) {
+  if (AUTOAPPLY_CONFIG.API_URL) {
+    callback(AUTOAPPLY_CONFIG.API_URL);
+    return;
+  }
+  
+  chrome.storage.local.get(['autoapply_settings'], (result) => {
+    const settings = result.autoapply_settings || {};
+    callback(settings.apiUrl || 'http://localhost:5000');
+  });
 }
 
 // Allow updating API URL dynamically
@@ -34,10 +63,19 @@ let sessionState = {
 };
 
 const initializeSession = () => {
-  chrome.storage.local.get([AUTOAPPLY_CONFIG.SESSION_KEY], (result) => {
+  chrome.storage.local.get([AUTOAPPLY_CONFIG.SESSION_KEY, AUTOAPPLY_CONFIG.SETTINGS_KEY], (result) => {
     const saved = result[AUTOAPPLY_CONFIG.SESSION_KEY];
+    const settings = result[AUTOAPPLY_CONFIG.SETTINGS_KEY] || {};
+    
+    if (settings.maxActionsPerHour) {
+      AUTOAPPLY_CONFIG.RATE_LIMIT.maxActionsPerHour = settings.maxActionsPerHour;
+    }
+    if (settings.cooldownMinutes) {
+      AUTOAPPLY_CONFIG.RATE_LIMIT.cooldownMinutes = settings.cooldownMinutes;
+    }
+    
+    const now = Date.now();
     if (saved) {
-      const now = Date.now();
       if (now - saved.lastResetTime > 3600000) {
         sessionState = {
           actionsThisHour: 0,

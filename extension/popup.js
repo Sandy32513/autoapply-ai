@@ -10,6 +10,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('syncBtn').addEventListener('click', syncWithBackend);
   document.getElementById('apiUrl').addEventListener('change', saveApiUrl);
   
+  document.getElementById('maxActionsPerHour').addEventListener('change', saveSettings);
+  document.getElementById('cooldownMinutes').addEventListener('change', saveSettings);
+  
   document.getElementById('autofillEnabled').addEventListener('change', saveSettings);
   document.getElementById('showFloatingBtn').addEventListener('change', saveSettings);
   document.getElementById('highlightBtn').addEventListener('change', saveSettings);
@@ -70,6 +73,8 @@ const loadSettings = () => {
     document.getElementById('autofillEnabled').checked = settings.autofillEnabled !== false;
     document.getElementById('showFloatingBtn').checked = settings.showFloatingButton !== false;
     document.getElementById('highlightBtn').checked = settings.highlightSubmitButton !== false;
+    document.getElementById('maxActionsPerHour').value = settings.maxActionsPerHour || 20;
+    document.getElementById('cooldownMinutes').value = settings.cooldownMinutes || 30;
   });
 };
 
@@ -78,6 +83,8 @@ const saveSettings = () => {
     autofillEnabled: document.getElementById('autofillEnabled').checked,
     showFloatingButton: document.getElementById('showFloatingBtn').checked,
     highlightSubmitButton: document.getElementById('highlightBtn').checked,
+    maxActionsPerHour: parseInt(document.getElementById('maxActionsPerHour').value) || 20,
+    cooldownMinutes: parseInt(document.getElementById('cooldownMinutes').value) || 30,
   };
   
   chrome.storage.local.set({ autoapply_settings: settings }, () => {

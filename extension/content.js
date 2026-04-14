@@ -1,9 +1,9 @@
 const AUTOAPPLY_VERSION = '1.0.0';
 
-const CONFIG = {
+const DEFAULT_CONFIG = {
   rateLimit: {
     maxActionsPerHour: 20,
-    cooldownMs: 30000,
+    cooldownMinutes: 30,
   },
   delays: {
     minTyping: 30,
@@ -12,6 +12,23 @@ const CONFIG = {
     beforeScroll: 300,
   },
 };
+
+let CONFIG = { ...DEFAULT_CONFIG };
+
+const loadConfig = () => {
+  chrome.storage.local.get(['autoapply_settings'], (result) => {
+    const settings = result.autoapply_settings || {};
+    CONFIG = {
+      rateLimit: {
+        maxActionsPerHour: settings.maxActionsPerHour || DEFAULT_CONFIG.rateLimit.maxActionsPerHour,
+        cooldownMinutes: settings.cooldownMinutes || DEFAULT_CONFIG.rateLimit.cooldownMinutes,
+      },
+      delays: DEFAULT_CONFIG.delays,
+    };
+  });
+};
+
+loadConfig();
 
 const JOB_PAGE_PATTERNS = [
   /linkedin\.com\/jobs/,
@@ -131,7 +148,7 @@ const recordAction = () => {
   
   if (sessionStats.actionsThisHour >= CONFIG.rateLimit.maxActionsPerHour - 2) {
     sessionStats.isOnCooldown = true;
-    sessionStats.cooldownEndTime = now + CONFIG.rateLimit.cooldownMs;
+    sessionStats.cooldownEndTime = now + (CONFIG.rateLimit.cooldownMinutes * 60 * 1000);
   }
 };
 
