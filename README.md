@@ -532,6 +532,9 @@ cd frontend && npm run dev
 | 5 | 🟠 HIGH | Resume Tailor Empty Text Validation | ✅ FIXED |
 | 9 | 🟡 MEDIUM | Login Page Not Working | ✅ FIXED |
 | 10 | 🟡 MEDIUM | Dashboard No Auth Protection | ✅ FIXED |
+| 11 | 🟡 MEDIUM | Extension Rate Limits Hardcoded | ✅ FIXED |
+| 12 | 🟡 MEDIUM | No Input Sanitization on Job Desc | ✅ FIXED |
+| 13 | 🟡 MEDIUM | PDF OCR Not Configurable | ✅ FIXED |
 
 ### ⚠️ PENDING - Lower Priority / Future Improvements
 
@@ -541,22 +544,24 @@ cd frontend && npm run dev
 | 6 | 🟠 HIGH | Job Scraper Source Validation | Minor issue |
 | 7 | 🟠 HIGH | Queue Service Memory Queue | Use Redis in production |
 | 8 | 🟠 HIGH | Missing Pagination in Stats | Performance improvement |
-| 11 | 🟡 MEDIUM | Extension Rate Limits Hardcoded | Feature request |
-| 12 | 🟡 MEDIUM | No Input Sanitization on Job Desc | Security enhancement |
-| 13 | 🟡 MEDIUM | PDF OCR Not Configurable | Feature request |
 
 ### 📋 Quick Fix Summary
 
-**Fixed (10 tasks):**
+**Fixed (13 tasks):**
 - ✅ User ID tracking in applications
 - ✅ Login/Register pages functional
 - ✅ Dashboard auth protection
 - ✅ Resume validation
 - ✅ Browser leak fixes
+- ✅ Input sanitization
+- ✅ OCR configurable
+- ✅ Rate limits configurable
 
-**Pending (7 tasks):**
+**Pending (4 tasks):**
 - ⚠️ Extension auth token
-- ⚠️ Minor improvements
+- ⚠️ Job scraper validation
+- ⚠️ Queue memory fallback
+- ⚠️ Pagination in stats
 
 ---
 
@@ -579,7 +584,7 @@ cd frontend && npm run dev
 |---------|-------------|--------|
 | FIX_CRITICAL_001 | Add user_id to startApplyFlow | ✅ DONE |
 | FIX_CRITICAL_002 | Add user_id to trackApplicationStatus | ✅ DONE |
-| FIX_CRITICAL_003 | Add auth token to extension API calls | ⚠️ PENDING |
+| FIX_CRITICAL_003 | Extension API auth token | ⚠️ PENDING |
 | FIX_HIGH_001 | Fix browser leak in automationService | ✅ DONE |
 | FIX_HIGH_002 | Validate resume text before tailoring | ✅ DONE |
 | FIX_HIGH_003 | Fix source validation in scraper | ⚠️ PENDING |
@@ -592,6 +597,7 @@ cd frontend && npm run dev
 | FIX_MEDIUM_005 | Make OCR configurable | ✅ DONE |
 
 ### ✅ Completed: 13/17 Tasks
+### ⚠️ Pending: 4/17 Tasks
 ### ⚠️ Pending: 7/17 Tasks (Future Improvements)
 
 | Task | Description |
