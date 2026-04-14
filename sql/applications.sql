@@ -1,6 +1,7 @@
 -- Applications table with status tracking
 CREATE TABLE IF NOT EXISTS applications (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id),
   job_id UUID REFERENCES jobs(id),
   job_url TEXT,
   job_title TEXT NOT NULL,
@@ -19,9 +20,19 @@ CREATE TABLE IF NOT EXISTS applications (
 -- Enable RLS
 ALTER TABLE applications ENABLE ROW LEVEL SECURITY;
 
--- RLS Policy - Allow anyone to read, only service to insert/update
-CREATE POLICY "Anyone can view applications" ON applications
-  FOR SELECT USING (true);
+-- RLS Policy - Users can only see their own applications
+CREATE POLICY "Users can view own applications" ON applications
+  FOR SELECT USING (auth.uid() = user_id);
 
+CREATE POLICY "Users can insert own applications" ON applications
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own applications" ON applications
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own applications" ON applications
+  FOR DELETE USING (auth.uid() = user_id);
+
+-- Service role can manage all applications
 CREATE POLICY "Service can manage applications" ON applications
   FOR ALL USING (auth.role() = 'service_role');

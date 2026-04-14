@@ -6,7 +6,8 @@ const {
   getResumeById,
   uploadResume, 
   tailorResumeHandler,
-  getTailoredResumes 
+  getTailoredResumes,
+  deleteResume 
 } = require('../controllers/resumeController');
 const upload = require('../middlewares/upload');
 
@@ -42,5 +43,11 @@ router.get('/', getResumes);
  * Get a specific resume
  */
 router.get('/:id', getResumeById);
+
+/**
+ * DELETE /api/resumes/:id
+ * Delete a resume and its tailored versions
+ */
+router.delete('/:id', deleteResume);
 
 module.exports = router;

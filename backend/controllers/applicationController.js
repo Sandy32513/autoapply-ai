@@ -5,6 +5,7 @@ const autofillService = require('../services/autofillService');
 
 const getApplications = async (req, res, next) => {
   try {
+    const userId = req.user?.id;
     const { page = 1, limit = 20, status } = req.query;
     
     const pageNum = Math.max(1, parseInt(page) || 1);
@@ -16,6 +17,10 @@ const getApplications = async (req, res, next) => {
       .select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(offset, offset + limitNum - 1);
+    
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
     
     if (status) {
       query = query.eq('status', status);
@@ -64,6 +69,7 @@ const getApplicationById = async (req, res, next) => {
 const applyToJob = async (req, res, next) => {
   try {
     const { jobId, resumeId } = req.body;
+    const userId = req.user?.id;
 
     if (!jobId) {
       return res.status(400).json({ success: false, error: 'Job ID is required' });
@@ -92,6 +98,7 @@ const applyToJob = async (req, res, next) => {
     const { data: application, error: appError } = await supabase
       .from('applications')
       .insert({
+        user_id: userId,
         job_id: jobId,
         job_title: job.title,
         company: job.company,
@@ -107,6 +114,7 @@ const applyToJob = async (req, res, next) => {
       return res.status(500).json({ success: false, error: 'Failed to create application' });
     }
 
+    let queueFailed = false;
     try {
       await addApplicationJob(
         application.id,
@@ -115,6 +123,22 @@ const applyToJob = async (req, res, next) => {
       );
     } catch (queueError) {
       console.error('Failed to add to queue:', queueError);
+      queueFailed = true;
+    }
+
+    if (queueFailed) {
+      return res.status(201).json({
+        success: true,
+        application: {
+          id: application.id,
+          job_title: application.job_title,
+          company: application.company,
+          status: application.status,
+          created_at: application.created_at,
+        },
+        message: 'Application submitted, but automated processing is currently unavailable',
+        queue_warning: true,
+      });
     }
 
     res.status(201).json({

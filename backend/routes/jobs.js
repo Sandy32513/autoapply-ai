@@ -28,12 +28,12 @@ router.get('/:id', getJobById);
  * POST /api/jobs/scrape
  * Scrape jobs and save to database (all sources)
  */
-router.post('/scrape', scrapeAndSaveJobs);
+router.post('/scrape', authenticate, scrapeAndSaveJobs);
 
 /**
  * POST /api/jobs/scrape/:source
  * Scrape jobs from a specific source (linkedin, naukri)
  */
-router.post('/scrape/:source', scrapeFromSource);
+router.post('/scrape/:source', authenticate, scrapeFromSource);
 
 module.exports = router;

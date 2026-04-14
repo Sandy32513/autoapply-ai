@@ -1,5 +1,5 @@
 const AUTOAPPLY_CONFIG = {
-  API_URL: getApiUrl(),
+  API_URL: null, // Will be loaded from chrome.storage.local
   RATE_LIMIT: {
     maxActionsPerHour: 20,
     cooldownMinutes: 30,
@@ -11,22 +11,6 @@ const AUTOAPPLY_CONFIG = {
 };
 
 function getApiUrl() {
-  // Check if custom API URL is stored in settings
-  const stored = localStorage.getItem('autoapply_api_url');
-  if (stored) {
-    return stored;
-  }
-  
-  // Detect environment based on hostname
-  const hostname = window?.location?.hostname || '';
-  
-  // Production: check for Vercel or custom domain
-  if (hostname.includes('vercel.app') || hostname.includes('production')) {
-    // Try to infer from current page or use environment variable
-    return 'https://autoapply-api.vercel.app/api';
-  }
-  
-  // Default to localhost for development
   return 'http://localhost:5000/api';
 }
 

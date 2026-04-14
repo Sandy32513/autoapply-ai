@@ -54,6 +54,9 @@ const tailorResume = async (resumeData, jobDescription) => {
 };
 
 const tailorWithOpenAI = async (resumeText, jobDescription) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -69,7 +72,10 @@ const tailorWithOpenAI = async (resumeText, jobDescription) => {
       max_tokens: 2000,
       temperature: 0.3,
     }),
+    signal: controller.signal,
   });
+
+  clearTimeout(timeoutId);
 
   if (!response.ok) {
     const error = await response.json();
@@ -83,18 +89,20 @@ const tailorWithOpenAI = async (resumeText, jobDescription) => {
 const tailorWithOllama = async (resumeText, jobDescription) => {
   const model = process.env.OLLAMA_MODEL || 'llama3.1';
   
-  // Check if using a vision model - these don't support text-only input
   if (model.includes('vision') || model === 'llama3.2' || model === 'llama3.2-vision') {
     throw new Error(`Model ${model} requires image input. Please use a text-only model like llama3.1 or llama3. For more info: https://ollama.ai/library/llama3.2`);
   }
-  
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60000);
+
   const response = await fetch(`${OLLAMA_URL}/api/generate`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'llama3.1', // Always use text-only model
+      model: 'llama3.1',
       prompt: `${SYSTEM_PROMPT}\n\n${USER_PROMPT({ text: resumeText }, jobDescription)}`,
       stream: false,
       options: {
@@ -102,7 +110,10 @@ const tailorWithOllama = async (resumeText, jobDescription) => {
         num_predict: 2000,
       },
     }),
+    signal: controller.signal,
   });
+
+  clearTimeout(timeoutId);
 
   if (!response.ok) {
     const errorText = await response.text();

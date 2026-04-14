@@ -69,6 +69,15 @@ const uploadResume = async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'File size exceeds 5MB limit' });
     }
 
+    const allowedMimeTypes = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+    
+    if (!allowedMimeTypes.includes(req.file.mimetype)) {
+      return res.status(400).json({ success: false, error: 'Only PDF and DOCX files are allowed' });
+    }
+
     const fileName = `${Date.now()}-${req.file.originalname}`;
     const filePath = `uploads/${fileName}`;
 
@@ -223,10 +232,51 @@ const getTailoredResumes = async (req, res, next) => {
   }
 };
 
+const deleteResume = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id;
+
+    const { data: existing, error: fetchError } = await supabase
+      .from('resumes')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !existing) {
+      return res.status(404).json({ success: false, error: 'Resume not found' });
+    }
+
+    if (userId && existing.user_id !== userId) {
+      return res.status(403).json({ success: false, error: 'Not authorized to delete this resume' });
+    }
+
+    await supabase
+      .from('tailored_resumes')
+      .delete()
+      .eq('resume_id', id);
+
+    const { error: deleteError } = await supabase
+      .from('resumes')
+      .delete()
+      .eq('id', id);
+
+    if (deleteError) {
+      console.error('Delete error:', deleteError);
+      return res.status(500).json({ success: false, error: 'Failed to delete resume' });
+    }
+
+    res.json({ success: true, message: 'Resume deleted successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = { 
   getResumes, 
   getResumeById,
   uploadResume, 
   tailorResumeHandler,
-  getTailoredResumes 
+  getTailoredResumes,
+  deleteResume
 };
