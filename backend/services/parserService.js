@@ -2,6 +2,7 @@ const pdf = require('pdf-parse');
 const mammoth = require('mammoth');
 
 const MIN_TEXT_LENGTH = 100;
+const ENABLE_OCR = process.env.ENABLE_OCR !== 'false';
 
 const parseResume = async (buffer, mimeType) => {
   let text = '';
@@ -10,7 +11,7 @@ const parseResume = async (buffer, mimeType) => {
     const result = await pdf(buffer);
     text = result.text;
     
-    if (!text || text.length < MIN_TEXT_LENGTH) {
+    if (ENABLE_OCR && (!text || text.length < MIN_TEXT_LENGTH)) {
       console.log('Text too short, attempting OCR...');
       try {
         text = await extractTextWithOCR(buffer);
