@@ -74,6 +74,8 @@ const startApplyFlow = async (jobUrl, userData) => {
     console.log('[ApplyFlow] Step 4: User submits manually');
     console.log('[ApplyFlow] Browser remains open for manual submission');
     
+    await browser.close();
+    
     return {
       success: true,
       step: 'ready_for_submission',
@@ -90,7 +92,11 @@ const startApplyFlow = async (jobUrl, userData) => {
     console.error('[ApplyFlow] Error:', error.message);
     
     if (browser) {
-      await browser.close().catch(() => {});
+      try {
+        await browser.close();
+      } catch (closeError) {
+        console.error('[ApplyFlow] Failed to close browser:', closeError.message);
+      }
     }
     
     return {

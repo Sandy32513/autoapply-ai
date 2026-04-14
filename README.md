@@ -522,11 +522,124 @@ cd frontend && npm run dev
 
 ## Known Bugs & Issues
 
-### ✅ ALL CODE ISSUES RESOLVED
+### 🔴 CRITICAL SEVERITY
 
-All critical, high, and medium severity bugs have been fixed in the codebase. The project is ready for production deployment.
+1. **Start Apply Flow Missing user_id** - `applicationController.js:185-202`
+   - Issue: Creates application without user_id when started from extension
+   - Impact: Applications not associated with user, data loss
+   - Fix: Add `user_id: req.user?.id` to application insert
 
-### 📋 SETUP/DEPLOYMENT TASKS (Manual - Not Code Issues)
+2. **Track Application Missing user_id** - `applicationController.js:251-259`
+   - Issue: Creates applications without user ownership
+   - Impact: Cannot filter by user, security issue
+   - Fix: Add user_id to insert when authenticated
+
+3. **Extension API Calls Not Authenticated** - `extension/background.js`
+   - Issue: `/api/users/me` and `/api/applications/track` called without token
+   - Impact: Failed sync, applications not tracked
+   - Fix: Pass auth token in API calls
+
+---
+
+### 🟠 HIGH SEVERITY
+
+4. **Automation Service Browser Leaks** - `automationService.js:42-103`
+   - Issue: Browser not closed on some error paths
+   - Impact: Memory leaks, resource exhaustion
+   - Fix: Add finally block to ensure browser.close()
+
+5. **Resume Tailor No Error Handling for Empty Resume** - `aiService.js:30-31`
+   - Issue: Truncates to empty string if no resume text
+   - Impact: AI gets no context, poor output
+   - Fix: Return error if resume text is empty
+
+6. **Job Scraper No Source Validation** - `scraperService.js:104-108`
+   - Issue: Source validated but lowercase may not match
+   - Impact: Invalid sources accepted or valid rejected
+   - Fix: Normalize source before comparison
+
+7. **Queue Service Memory Queue Not Functional** - `queueService.js`
+   - Issue: Memory queue emits events but doesn't store jobs properly
+   - Impact: Applications not queued in development
+   - Fix: Implement proper in-memory queue or remove fallback
+
+8. **Missing Pagination in getApplicationStats** - `applicationController.js:279-281`
+   - Issue: Fetches ALL applications without pagination
+   - Impact: Performance issue with many applications
+   - Fix: Add pagination or limit query
+
+---
+
+### 🟡 MEDIUM SEVERITY
+
+9. **Login Page Does Nothing** - `frontend/src/app/login/page.tsx`
+   - Issue: Just redirects to /dashboard, no login form
+   - Impact: User cannot log in
+   - Fix: Implement actual login page
+
+10. **No Auth Protection on Dashboard** - `frontend/src/app/dashboard/page.tsx`
+    - Issue: Dashboard accessible without checking auth
+    - Impact: May show errors if not authenticated
+    - Fix: Add auth check or redirect to login
+
+11. **Extension Rate Limit Uses Hardcoded Values** - `extension/background.js:3-6`
+    - Issue: Rate limit not configurable
+    - Impact: Cannot adjust for different use cases
+    - Fix: Read from settings or environment
+
+12. **No Input Validation on Job Description** - `resumeController.js`
+    - Issue: Job description not sanitized
+    - Impact: Potential XSS in stored data
+    - Fix: Sanitize HTML/script tags
+
+13. **PDF OCR Not Configurable** - `parserService.js:12-17`
+    - Issue: OCR always runs when text too short
+    - Impact: Slow parsing for certain PDFs
+    - Fix: Make OCR optional via config
+
+---
+
+### 🟢 LOW SEVERITY
+
+14. **No Loading States in Forms** - `frontend/src/app/dashboard/resumes/page.tsx`
+    - Issue: Upload form shows no feedback
+    - Impact: Poor UX during upload
+
+15. **Console.log Debug Statements** - Multiple files
+    - Issue: Excessive logging in production
+    - Impact: Cluttered logs
+
+16. **No Error Boundaries in React** - `frontend/src/app/`
+    - Issue: Uncaught errors crash entire app
+    - Impact: Poor error handling
+
+17. **Inconsistent Error Responses** - Backend controllers
+    - Issue: Some return success:false, others throw
+    - Impact: Hard to handle errors uniformly
+
+---
+
+### 📋 BUG FIX TASKS
+
+| Task ID | Severity | Description | Status |
+|---------|----------|-------------|--------|
+| FIX_CRITICAL_001 | CRITICAL | Add user_id to startApplyFlow | ✅ FIXED |
+| FIX_CRITICAL_002 | CRITICAL | Add user_id to trackApplicationStatus | ✅ FIXED |
+| FIX_CRITICAL_003 | CRITICAL | Add auth token to extension API calls | ⚠️ PENDING |
+| FIX_HIGH_001 | HIGH | Fix browser leak in automationService | ✅ FIXED |
+| FIX_HIGH_002 | HIGH | Validate resume text before tailoring | ✅ FIXED |
+| FIX_HIGH_003 | HIGH | Fix source validation in scraper | ⚠️ PENDING |
+| FIX_HIGH_004 | HIGH | Fix queue memory fallback | ⚠️ PENDING |
+| FIX_HIGH_005 | HIGH | Add pagination to getApplicationStats | ⚠️ PENDING |
+| FIX_MEDIUM_001 | MEDIUM | Implement actual login page | ✅ FIXED |
+| FIX_MEDIUM_002 | MEDIUM | Add auth check to dashboard | ✅ FIXED |
+| FIX_MEDIUM_003 | MEDIUM | Make rate limits configurable | ⚠️ PENDING |
+| FIX_MEDIUM_004 | MEDIUM | Sanitize job description input | ⚠️ PENDING |
+| FIX_MEDIUM_005 | MEDIUM | Make OCR configurable | ⚠️ PENDING |
+| FIX_LOW_001 | LOW | Add loading states to forms | ⚠️ PENDING |
+| FIX_LOW_002 | LOW | Remove debug console.logs | ⚠️ PENDING |
+| FIX_LOW_003 | LOW | Add React error boundaries | ⚠️ PENDING |
+| FIX_LOW_004 | LOW | Standardize error responses | ⚠️ PENDING |
 
 | Task | Description |
 |------|-------------|

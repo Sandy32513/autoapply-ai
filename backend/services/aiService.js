@@ -30,6 +30,10 @@ const tailorResume = async (resumeData, jobDescription) => {
   const truncatedJob = jobDescription.substring(0, 4000);
   const resumeText = (resumeData.parsed_data?.text || resumeData.text || '').substring(0, 8000);
 
+  if (!resumeText || resumeText.trim().length < 10) {
+    throw new Error('Resume text is empty or too short. Please upload a valid resume with content.');
+  }
+
   try {
     if (USE_OPENAI && OPENAI_API_KEY) {
       return await tailorWithOpenAI(resumeText, truncatedJob);

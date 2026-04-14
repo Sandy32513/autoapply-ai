@@ -170,6 +170,7 @@ const getQueueInfo = async (req, res, next) => {
 const startApplyFlow = async (req, res, next) => {
   try {
     const { jobUrl, userData } = req.body;
+    const userId = req.user?.id;
     
     if (!jobUrl) {
       return res.status(400).json({ success: false, error: 'Job URL is required' });
@@ -184,21 +185,24 @@ const startApplyFlow = async (req, res, next) => {
     
     const result = await automationService.startApplyFlow(jobUrl, userProfile);
     
-    const { data: application, error: appError } = await supabase
-      .from('applications')
-      .insert({
-        job_url: jobUrl,
-        status: 'started',
-        source: 'web',
-      })
-      .select()
-      .single();
-    
-    if (!appError && application) {
-      await supabase
+    let applicationId = null;
+    if (result.success) {
+      const { data: application, error: appError } = await supabase
         .from('applications')
-        .update({ application_id: application.id })
-        .eq('id', application.id);
+        .insert({
+          user_id: userId,
+          job_url: jobUrl,
+          job_title: result.title || 'Unknown',
+          company: 'Unknown',
+          status: 'started',
+          source: 'web',
+        })
+        .select()
+        .single();
+      
+      if (!appError && application) {
+        applicationId = application.id;
+      }
     }
     
     res.json({
@@ -210,6 +214,7 @@ const startApplyFlow = async (req, res, next) => {
         formDetected: result.formDetected,
         fieldsFound: result.fieldsFound,
         instruction: result.instruction,
+        applicationId,
       },
     });
   } catch (err) {
@@ -221,16 +226,17 @@ const startApplyFlow = async (req, res, next) => {
 const trackApplicationStatus = async (req, res, next) => {
   try {
     const { jobUrl, status, company, jobTitle, source } = req.body;
+    const userId = req.user?.id;
     
     if (!jobUrl) {
       return res.status(400).json({ success: false, error: 'Job URL is required' });
     }
     
-    const existingApp = await supabase
-      .from('applications')
-      .select('*')
-      .eq('job_url', jobUrl)
-      .single();
+    const query = userId 
+      ? supabase.from('applications').select('*').eq('job_url', jobUrl).eq('user_id', userId).single()
+      : supabase.from('applications').select('*').eq('job_url', jobUrl).single();
+    
+    const existingApp = await query;
     
     let application;
     if (existingApp.data) {
@@ -251,6 +257,7 @@ const trackApplicationStatus = async (req, res, next) => {
       const { data: created, error } = await supabase
         .from('applications')
         .insert({
+          user_id: userId,
           job_url: jobUrl,
           job_title: jobTitle || 'Unknown',
           company: company || 'Unknown',
@@ -270,7 +277,7 @@ const trackApplicationStatus = async (req, res, next) => {
     });
   } catch (err) {
     console.error('Error tracking application:', err);
-    res.json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: err.message });
   }
 };
 
