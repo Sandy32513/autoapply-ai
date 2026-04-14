@@ -1,6 +1,7 @@
 -- Jobs table for storing discovered job listings
 CREATE TABLE IF NOT EXISTS jobs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id),
   title TEXT NOT NULL,
   company TEXT NOT NULL,
   location TEXT,
