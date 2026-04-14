@@ -589,9 +589,9 @@ cd frontend && npm run dev
 | FIX_MEDIUM_002 | Add auth check to dashboard | ✅ DONE |
 | FIX_MEDIUM_003 | Make rate limits configurable | ⚠️ PENDING |
 | FIX_MEDIUM_004 | Sanitize job description input | ⚠️ PENDING |
-| FIX_MEDIUM_005 | Make OCR configurable | ⚠️ PENDING |
+| FIX_MEDIUM_005 | Make OCR configurable | ✅ DONE |
 
-### ✅ Completed: 10/17 Tasks
+### ✅ Completed: 11/17 Tasks
 ### ⚠️ Pending: 7/17 Tasks (Future Improvements)
 
 | Task | Description |
