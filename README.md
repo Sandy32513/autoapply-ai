@@ -615,26 +615,22 @@ cd frontend && npm run dev
 
 ---
 
-### ✅ FIXED - ALL ISSUES RESOLVED
+### ✅ ALL ISSUES RESOLVED
 
-All identified bugs and security issues have been fixed. The project is now ready for production deployment.
+All code bugs and security fixes have been completed. The project is ready for production.
 
 ---
 
-### ⚠️ PENDING - REQUIRES MANUAL ACTION
+### ⚠️ PENDING - MANUAL ACTION REQUIRED (NOT CODE ISSUES)
 
-#### Critical - Must Do Immediately
+These are setup/deployment tasks, not bugs:
 
-- [x] **REGENERATE API KEYS** - Done (you provided the keys)
-- [x] **UPDATE .ENV** - Keys saved locally (not committed - correct!)
-- [ ] **RUN SQL** - Execute `sql/resumes.sql` in Supabase SQL editor
-
-#### Deployment
-
-1. Deploy frontend to Vercel
-2. Deploy backend to Render/Railway/etc
-3. Update `ALLOWED_ORIGINS` with production URLs
-4. Set environment variables in deployment platform
+| Task | Status | Description |
+|------|--------|-------------|
+| **Run SQL Schema** | ⏳ PENDING | Execute `sql/resumes.sql` in Supabase SQL Editor |
+| **Deploy Frontend** | ⏳ PENDING | Deploy to Vercel |
+| **Deploy Backend** | ⏳ PENDING | Deploy to Render/Railway |
+| **Set Environment Vars** | ⏳ PENDING | Configure production URLs in deployment |
 
 ---
 
