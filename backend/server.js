@@ -16,14 +16,24 @@ const { apiLimiter } = require('./middlewares/rateLimiter');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ─── Security & Parsing ──────────────────────────────────────────────────────
-app.use(helmet());
+// ─── CORS Configuration ────────────────────────────────────────────────────────
+const getCorsOrigins = () => {
+  const origins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'];
+  // Add common production origins if not configured
+  if (process.env.NODE_ENV === 'production') {
+    return [
+      ...origins,
+      'https://autoapply-ai.vercel.app',
+      'https://autoapply-ai-*.vercel.app',
+    ];
+  }
+  return origins;
+};
+
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || 'http://localhost:3000',
+  origin: getCorsOrigins(),
   credentials: true,
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 // ─── Logging ─────────────────────────────────────────────────────────────────
 if (process.env.NODE_ENV !== 'test') {

@@ -1,126 +1,88 @@
 const { JSDOM } = require('jsdom');
+const jobConnector = require('./connectors/jobConnector');
 
 const SCRAPER_CONFIG = {
   timeout: 30000,
   maxJobs: 20,
+  minDelay: 3000,
+  maxDelay: 8000,
+  userAgents: [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0',
+  ],
 };
 
-const mockJobs = [
-  {
-    title: 'Software Engineer',
-    company: 'Tech Corp',
-    location: 'Remote',
-    url: 'https://example.com/job/1',
-    description: 'We are looking for a software engineer to join our team. Experience with React, Node.js, and TypeScript required.',
-  },
-  {
-    title: 'Full Stack Developer',
-    company: 'StartupXYZ',
-    location: 'San Francisco, CA',
-    url: 'https://example.com/job/2',
-    description: 'Fast-growing startup seeks a full stack developer. Work with React, Python, and AWS.',
-  },
-  {
-    title: 'Frontend Developer',
-    company: 'DesignStudio',
-    location: 'New York, NY',
-    url: 'https://example.com/job/3',
-    description: 'Creative agency looking for a frontend developer. Strong CSS and animation skills needed.',
-  },
-  {
-    title: 'Backend Engineer',
-    company: 'DataSystems',
-    location: 'Austin, TX',
-    url: 'https://example.com/job/4',
-    description: 'Build scalable APIs with Go and Kubernetes. Experience with databases required.',
-  },
-  {
-    title: 'DevOps Engineer',
-    company: 'CloudFirst',
-    location: 'Seattle, WA',
-    url: 'https://example.com/job/5',
-    description: 'Manage cloud infrastructure on AWS and GCP. CI/CD pipeline experience needed.',
-  },
-  {
-    title: 'Product Manager',
-    company: 'Innovation Labs',
-    location: 'Boston, MA',
-    url: 'https://example.com/job/6',
-    description: 'Lead product development for new AI-powered features. Technical background preferred.',
-  },
-  {
-    title: 'Data Scientist',
-    company: 'AI Solutions',
-    location: 'Remote',
-    url: 'https://example.com/job/7',
-    description: 'Build machine learning models. Python, TensorFlow, and SQL experience required.',
-  },
-  {
-    title: 'UX Designer',
-    company: 'UserFirst',
-    location: 'Los Angeles, CA',
-    url: 'https://example.com/job/8',
-    description: 'Design intuitive user interfaces. Figma and design systems experience needed.',
-  },
-  {
-    title: 'QA Engineer',
-    company: 'QualityTech',
-    location: 'Chicago, IL',
-    url: 'https://example.com/job/9',
-    description: 'Test web applications. Selenium and automation testing experience required.',
-  },
-  {
-    title: 'Mobile Developer',
-    company: 'AppWorks',
-    location: 'Miami, FL',
-    url: 'https://example.com/job/10',
-    description: 'Build iOS and Android apps. React Native or Swift experience needed.',
-  },
-];
+const randomDelay = () => {
+  const delay = Math.floor(Math.random() * (SCRAPER_CONFIG.maxDelay - SCRAPER_CONFIG.minDelay + 1)) + SCRAPER_CONFIG.minDelay;
+  return new Promise(resolve => setTimeout(resolve, delay));
+};
+
+const getRandomUserAgent = () => {
+  return SCRAPER_CONFIG.userAgents[Math.floor(Math.random() * SCRAPER_CONFIG.userAgents.length)];
+};
+
+const simulateHumanBehavior = async () => {
+  await randomDelay();
+};
+
+const isPublicJobPage = (url) => {
+  const publicDomains = [
+    'linkedin.com/jobs',
+    'naukri.com',
+    'indeed.com',
+    'glassdoor.com',
+    'monster.com',
+    'timesjobs.com',
+    'shine.com',
+    'careerjet.com',
+  ];
+  
+  try {
+    const urlObj = new URL(url);
+    return publicDomains.some(domain => urlObj.hostname.includes(domain));
+  } catch {
+    return false;
+  }
+};
 
 const scrapeJobs = async (keywords = '', location = '') => {
   console.log(`Scraping jobs for: keywords="${keywords}", location="${location}"`);
   
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  await simulateHumanBehavior();
   
-  let jobs = [...mockJobs];
+  const result = await jobConnector.fetchAllSources(keywords, location, SCRAPER_CONFIG.maxJobs);
   
-  if (keywords) {
-    const keywordLower = keywords.toLowerCase();
-    jobs = jobs.filter(job => 
-      job.title.toLowerCase().includes(keywordLower) ||
-      job.description.toLowerCase().includes(keywordLower) ||
-      job.company.toLowerCase().includes(keywordLower)
-    );
-  }
+  const allJobs = [...result.linkedin, ...result.naukri];
   
-  if (location) {
-    const locationLower = location.toLowerCase();
-    jobs = jobs.filter(job => 
-      job.location.toLowerCase().includes(locationLower)
-    );
-  }
-  
-  jobs = jobs.slice(0, SCRAPER_CONFIG.maxJobs);
-  
-  const timestamp = Date.now();
-  jobs = jobs.map((job, index) => ({
-    ...job,
-    url: `${job.url}?q=${keywords}&l=${location}&t=${timestamp}&i=${index}`,
-  }));
-  
-  console.log(`Found ${jobs.length} jobs`);
-  return jobs;
+  console.log(`Found ${allJobs.length} jobs from all sources`);
+  return allJobs;
 };
 
 const scrapeFromUrl = async (url) => {
+  if (!isPublicJobPage(url)) {
+    console.log(`Skipping non-public job page: ${url}`);
+    return null;
+  }
+
   try {
+    await simulateHumanBehavior();
+    
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'User-Agent': getRandomUserAgent(),
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate',
       },
       timeout: SCRAPER_CONFIG.timeout,
     });
+    
+    if (!response.ok) {
+      console.log(`HTTP error: ${response.status}`);
+      return null;
+    }
     
     const html = await response.text();
     const dom = new JSDOM(html);
@@ -139,4 +101,22 @@ const scrapeFromUrl = async (url) => {
   }
 };
 
-module.exports = { scrapeJobs, scrapeFromUrl };
+const scrapeFromSource = async (source, keywords = '', location = '') => {
+  const availableSources = jobConnector.getAvailableSources();
+  
+  if (!availableSources.includes(source.toLowerCase())) {
+    throw new Error(`Invalid source. Available: ${availableSources.join(', ')}`);
+  }
+
+  await simulateHumanBehavior();
+  
+  return await jobConnector.fetchJobsFromSource(source, keywords, location, SCRAPER_CONFIG.maxJobs);
+};
+
+module.exports = {
+  scrapeJobs,
+  scrapeFromUrl,
+  scrapeFromSource,
+  isPublicJobPage,
+  getAvailableSources: jobConnector.getAvailableSources,
+};

@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS jobs (
   url TEXT UNIQUE NOT NULL,
   description TEXT,
   source TEXT DEFAULT 'linkedin',
+  salary TEXT,
+  job_type TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

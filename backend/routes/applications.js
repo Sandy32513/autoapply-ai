@@ -4,7 +4,10 @@ const {
   getApplications, 
   getApplicationById,
   applyToJob,
-  getQueueInfo 
+  getQueueInfo,
+  startApplyFlow,
+  trackApplicationStatus,
+  getApplicationStats
 } = require('../controllers/applicationController');
 
 /**
@@ -12,6 +15,24 @@ const {
  * Submit job application (must be before :id route)
  */
 router.post('/apply', applyToJob);
+
+/**
+ * POST /api/applications/start-apply
+ * Start the semi-automated apply flow
+ */
+router.post('/start-apply', startApplyFlow);
+
+/**
+ * POST /api/applications/track
+ * Track application status from extension
+ */
+router.post('/track', trackApplicationStatus);
+
+/**
+ * GET /api/applications/stats
+ * Get application statistics
+ */
+router.get('/stats', getApplicationStats);
 
 /**
  * GET /api/applications/queue/status

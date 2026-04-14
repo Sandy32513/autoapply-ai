@@ -621,6 +621,86 @@ git config --global user.email "your-noreply@users.noreply.github.com"
 
 ---
 
+## Deployment Guide
+
+### Prerequisites
+- Node.js 18+
+- Supabase account (for database)
+- Redis (for queue) - optional for development
+
+### Database Setup
+
+1. **Create Supabase Project**
+   - Go to https://supabase.com and create a new project
+   - Get your `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from Settings → API
+
+2. **Run SQL Schema**
+   - Open Supabase SQL Editor and run:
+   ```sql
+   -- Enable UUID extension
+   CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+   -- Run tables from sql/ folder
+   -- resumes.sql, jobs.sql, applications.sql, tailored_resumes.sql
+   ```
+
+### Backend Deployment (Render/ Railway/ Fly.io)
+
+```bash
+# 1. Push to GitHub
+git add .
+git commit -m "Ready for deployment"
+git push origin main
+
+# 2. Configure environment variables in your deployment platform:
+PORT=5000
+NODE_ENV=production
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+ALLOWED_ORIGINS=https://your-frontend.vercel.app
+USE_OPENAI=true
+OPENAI_API_KEY=sk-your-key
+
+# 3. Start command:
+npm run start
+```
+
+### Frontend Deployment (Vercel)
+
+```bash
+# 1. Deploy to Vercel
+npx vercel deploy
+
+# Or connect GitHub repo in Vercel dashboard
+
+# 2. Environment variables:
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_API_URL=https://your-backend.onrender.com
+```
+
+### Chrome Extension Deployment
+
+1. **Package Extension**
+   - Go to `chrome://extensions`
+   - Enable "Developer mode"
+   - Click "Pack extension"
+   - Select the `extension/` folder
+
+2. **Publish to Chrome Web Store**
+   - Create developer account at https://chrome.google.com/webstore/devconsole
+   - Upload packaged `.zip` file
+
+### Production Checklist
+
+- [ ] Set `NODE_ENV=production`
+- [ ] Configure `ALLOWED_ORIGINS` with production URLs
+- [ ] Set up Redis for queue (or disable queue)
+- [ ] Configure AI API keys
+- [ ] Update extension API URL to production backend
+
+---
+
 ## Development Commands
 
 ### Backend

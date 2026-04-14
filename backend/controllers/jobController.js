@@ -1,9 +1,10 @@
 const { supabase } = require('../config/supabase');
 const { scrapeJobs } = require('../services/scraperService');
+const jobConnector = require('../services/connectors/jobConnector');
 
 const getJobs = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, search = '', location = '' } = req.query;
+    const { page = 1, limit = 20, search = '', location = '', source = '' } = req.query;
     const offset = (page - 1) * limit;
 
     let query = supabase
@@ -18,6 +19,10 @@ const getJobs = async (req, res, next) => {
 
     if (location) {
       query = query.ilike('location', `%${location}%`);
+    }
+
+    if (source) {
+      query = query.eq('source', source);
     }
 
     const { data, error, count } = await query;
@@ -71,6 +76,21 @@ const getJobById = async (req, res, next) => {
   }
 };
 
+const getSources = async (req, res, next) => {
+  const sources = jobConnector.getAvailableSources();
+  
+  res.json({
+    success: true,
+    sources: sources.map(source => ({
+      id: source,
+      name: source.charAt(0).toUpperCase() + source.slice(1),
+      url: source === 'linkedin' 
+        ? 'https://www.linkedin.com/jobs/'
+        : 'https://www.naukri.com/',
+    })),
+  });
+};
+
 const scrapeAndSaveJobs = async (req, res, next) => {
   try {
     const { keywords = '', location = '' } = req.body;
@@ -91,7 +111,9 @@ const scrapeAndSaveJobs = async (req, res, next) => {
       location: job.location,
       url: job.url,
       description: job.description,
-      source: 'mock',
+      source: job.source,
+      salary: job.salary || null,
+      job_type: job.jobType || null,
     }));
 
     try {
@@ -117,4 +139,53 @@ const scrapeAndSaveJobs = async (req, res, next) => {
   }
 };
 
-module.exports = { getJobs, getJobById, scrapeAndSaveJobs };
+const scrapeFromSource = async (req, res, next) => {
+  try {
+    const { source } = req.params;
+    const { keywords = '', location = '', limit = 20 } = req.body;
+    
+    const availableSources = jobConnector.getAvailableSources();
+    
+    if (!availableSources.includes(source.toLowerCase())) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid source. Available: ${availableSources.join(', ')}`,
+      });
+    }
+    
+    const jobs = await jobConnector.fetchJobsFromSource(source, keywords, location, limit);
+    
+    const jobsToInsert = jobs.map(job => ({
+      title: job.title,
+      company: job.company,
+      location: job.location,
+      url: job.url,
+      description: job.description,
+      source: job.source,
+      salary: job.salary || null,
+      job_type: job.jobType || null,
+    }));
+    
+    if (jobsToInsert.length > 0) {
+      try {
+        await supabase
+          .from('jobs')
+          .upsert(jobsToInsert, { onConflict: 'url', ignoreDuplicates: true });
+      } catch (dbError) {
+        console.error('Database error:', dbError);
+      }
+    }
+    
+    res.json({
+      success: true,
+      message: `Found ${jobs.length} jobs from ${source}`,
+      source,
+      jobs: jobsToInsert,
+    });
+  } catch (err) {
+    console.error('Error scraping from source:', err);
+    next(err);
+  }
+};
+
+module.exports = { getJobs, getJobById, scrapeAndSaveJobs, scrapeFromSource, getSources };

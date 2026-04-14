@@ -1,17 +1,37 @@
 const { supabase } = require('../config/supabase');
 const { addApplicationJob, getQueueStatus } = require('../services/queueService');
+const automationService = require('../services/automationService');
+const autofillService = require('../services/autofillService');
 
 const getApplications = async (req, res, next) => {
   try {
-    const { data, error } = await supabase
+    const { page = 1, limit = 20, status } = req.query;
+    const offset = (page - 1) * limit;
+    
+    let query = supabase
       .from('applications')
-      .select('*')
+      .select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
-      .limit(50);
+      .range(offset, offset + parseInt(limit) - 1);
+    
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    const { data, error, count } = await query;
 
     if (error) throw error;
 
-    res.json({ success: true, applications: data || [] });
+    res.json({ 
+      success: true, 
+      applications: data || [],
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: count || 0,
+        pages: Math.ceil((count || 0) / parseInt(limit)),
+      }
+    });
   } catch (err) {
     console.error('Error fetching applications:', err);
     res.json({ success: true, applications: [] });
@@ -120,9 +140,158 @@ const getQueueInfo = async (req, res, next) => {
   }
 };
 
+const startApplyFlow = async (req, res, next) => {
+  try {
+    const { jobUrl, userData } = req.body;
+    
+    if (!jobUrl) {
+      return res.status(400).json({ success: false, error: 'Job URL is required' });
+    }
+    
+    const userProfile = userData || {
+      name: req.user?.name || '',
+      email: req.user?.email || '',
+      phone: req.user?.phone || '',
+      linkedin: req.user?.linkedin_url || '',
+    };
+    
+    const result = await automationService.startApplyFlow(jobUrl, userProfile);
+    
+    const { data: application, error: appError } = await supabase
+      .from('applications')
+      .insert({
+        job_url: jobUrl,
+        status: 'started',
+        source: 'web',
+      })
+      .select()
+      .single();
+    
+    if (!appError && application) {
+      await supabase
+        .from('applications')
+        .update({ application_id: application.id })
+        .eq('id', application.id);
+    }
+    
+    res.json({
+      success: result.success,
+      message: result.message,
+      data: {
+        jobUrl: result.jobUrl,
+        step: result.step,
+        formDetected: result.formDetected,
+        fieldsFound: result.fieldsFound,
+        instruction: result.instruction,
+      },
+    });
+  } catch (err) {
+    console.error('Error starting apply flow:', err);
+    next(err);
+  }
+};
+
+const trackApplicationStatus = async (req, res, next) => {
+  try {
+    const { jobUrl, status, company, jobTitle, source } = req.body;
+    
+    if (!jobUrl) {
+      return res.status(400).json({ success: false, error: 'Job URL is required' });
+    }
+    
+    const existingApp = await supabase
+      .from('applications')
+      .select('*')
+      .eq('job_url', jobUrl)
+      .single();
+    
+    let application;
+    if (existingApp.data) {
+      const { data: updated, error } = await supabase
+        .from('applications')
+        .update({
+          status: status || existingApp.data.status,
+          company: company || existingApp.data.company,
+          job_title: jobTitle || existingApp.data.job_title,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existingApp.data.id)
+        .select()
+        .single();
+      
+      application = updated;
+    } else {
+      const { data: created, error } = await supabase
+        .from('applications')
+        .insert({
+          job_url: jobUrl,
+          job_title: jobTitle || 'Unknown',
+          company: company || 'Unknown',
+          status: status || 'started',
+          source: source || 'extension',
+        })
+        .select()
+        .single();
+      
+      application = created;
+    }
+    
+    res.json({
+      success: true,
+      application: application,
+      message: 'Application tracked successfully',
+    });
+  } catch (err) {
+    console.error('Error tracking application:', err);
+    res.json({ success: false, error: err.message });
+  }
+};
+
+const getApplicationStats = async (req, res, next) => {
+  try {
+    const { data: applications, error } = await supabase
+      .from('applications')
+      .select('status');
+    
+    if (error) throw error;
+    
+    const stats = {
+      total: applications?.length || 0,
+      pending: 0,
+      started: 0,
+      applied: 0,
+      rejected: 0,
+      interviewed: 0,
+    };
+    
+    applications?.forEach(app => {
+      const status = app.status?.toLowerCase() || 'pending';
+      if (stats.hasOwnProperty(status)) {
+        stats[status]++;
+      } else {
+        stats.pending++;
+      }
+    });
+    
+    res.json({
+      success: true,
+      stats,
+    });
+  } catch (err) {
+    console.error('Error getting stats:', err);
+    res.json({ 
+      success: true, 
+      stats: { total: 0, pending: 0, started: 0, applied: 0, rejected: 0, interviewed: 0 } 
+    });
+  }
+};
+
 module.exports = { 
   getApplications, 
   getApplicationById,
   applyToJob,
-  getQueueInfo
+  getQueueInfo,
+  startApplyFlow,
+  trackApplicationStatus,
+  getApplicationStats
 };

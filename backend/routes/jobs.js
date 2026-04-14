@@ -1,12 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const { getJobs, getJobById, scrapeAndSaveJobs } = require('../controllers/jobController');
+const { getJobs, getJobById, scrapeAndSaveJobs, scrapeFromSource, getSources } = require('../controllers/jobController');
 
 /**
  * GET /api/jobs
  * Get all jobs with pagination and filters
  */
 router.get('/', getJobs);
+
+/**
+ * GET /api/jobs/sources
+ * Get available job sources
+ */
+router.get('/sources', getSources);
 
 /**
  * GET /api/jobs/:id
@@ -16,8 +22,14 @@ router.get('/:id', getJobById);
 
 /**
  * POST /api/jobs/scrape
- * Scrape jobs and save to database
+ * Scrape jobs and save to database (all sources)
  */
 router.post('/scrape', scrapeAndSaveJobs);
+
+/**
+ * POST /api/jobs/scrape/:source
+ * Scrape jobs from a specific source (linkedin, naukri)
+ */
+router.post('/scrape/:source', scrapeFromSource);
 
 module.exports = router;

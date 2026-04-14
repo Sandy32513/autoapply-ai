@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoApply AI</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      width: 380px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f8f9fa;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .header p {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+    .content {
+      padding: 16px;
+    }
+    .section {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-title svg {
+      width: 16px;
+      height: 16px;
+    }
+    .form-group {
+      margin-bottom: 12px;
+    }
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-group input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    .form-group textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      min-height: 70px;
+      resize: vertical;
+      font-family: inherit;
+    }
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    .btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn:hover {
+      opacity: 0.92;
+    }
+    .btn:active {
+      transform: scale(0.98);
+    }
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #444;
+    }
+    .btn-secondary:hover {
+      background: #e9ecef;
+    }
+    .btn-small {
+      padding: 8px 12px;
+      font-size: 12px;
+    }
+    .stats {
+      display: flex;
+      justify-content: space-around;
+      text-align: center;
+    }
+    .stat-item {
+      padding: 10px 15px;
+    }
+    .stat-value {
+      font-size: 22px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .stat-label {
+      font-size: 11px;
+      color: #666;
+      margin-top: 4px;
+    }
+    .rate-limit {
+      background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%);
+      border: 1px solid #ffc107;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      color: #856404;
+      display: none;
+    }
+    .rate-limit.show {
+      display: block;
+    }
+    .rate-limit-text {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .toggle-row:last-child {
+      border-bottom: none;
+    }
+    .toggle-label {
+      font-size: 13px;
+      color: #333;
+    }
+    .toggle {
+      position: relative;
+      width: 44px;
+      height: 24px;
+    }
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: 0.3s;
+      border-radius: 24px;
+    }
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+    input:checked + .toggle-slider {
+      background-color: #667eea;
+    }
+    input:checked + .toggle-slider:before {
+      transform: translateX(20px);
+    }
+    .current-page {
+      padding: 12px;
+      background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+      border-radius: 8px;
+      font-size: 12px;
+      color: #444;
+      border-left: 3px solid #667eea;
+    }
+    .current-page strong {
+      color: #333;
+    }
+    .badge-success {
+      background: #d4edda;
+      color: #155724;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+    .badge-warning {
+      background: #fff3cd;
+      color: #856404;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+    .api-url-input {
+      font-size: 12px;
+      padding: 8px;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>AutoApply AI</h1>
+    <p>Smart Job Application Assistant</p>
+  </div>
+  
+  <div class="content">
+    <div class="section">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3"/>
+        </svg>
+        Current Page
+      </div>
+      <div class="current-page" id="currentPage">
+        Detecting...
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/>
+        </svg>
+        Your Profile
+      </div>
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="name" placeholder="John Doe">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="email" placeholder="john@example.com">
+      </div>
+      <div class="form-group">
+        <label>Phone</label>
+        <input type="tel" id="phone" placeholder="+1 234 567 8900">
+      </div>
+      <div class="form-group">
+        <label>LinkedIn URL</label>
+        <input type="url" id="linkedin" placeholder="https://linkedin.com/in/...">
+      </div>
+      <div class="form-group">
+        <label>Cover Letter (default)</label>
+        <textarea id="coverLetter" placeholder="Brief introduction for applications..."></textarea>
+      </div>
+      <button class="btn" id="saveBtn">Save Profile</button>
+    </div>
+
+    <div class="section" id="rateLimitSection" style="display:none;">
+      <div class="rate-limit show" id="rateLimitMsg"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        Session Control
+      </div>
+      <div class="stats">
+        <div class="stat-item">
+          <div class="stat-value" id="actionsRemaining">20</div>
+          <div class="stat-label">Actions Left</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="fieldsFilled">0</div>
+          <div class="stat-label">Fields Filled</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="appsStarted">0</div>
+          <div class="stat-label">Applications</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        Settings
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">Autofill Enabled</span>
+        <label class="toggle">
+          <input type="checkbox" id="autofillEnabled" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">Show Floating Button</span>
+        <label class="toggle">
+          <input type="checkbox" id="showFloatingBtn" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">Highlight Apply Button</span>
+        <label class="toggle">
+          <input type="checkbox" id="highlightBtn" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="section">
+      <button class="btn btn-secondary" id="syncBtn">Sync with Backend</button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
