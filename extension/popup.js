@@ -1,17 +1,32 @@
 document.addEventListener('DOMContentLoaded', () => {
   loadUserData();
   loadSettings();
+  loadApiUrl();
   loadStats();
   updateSessionStatus();
   detectCurrentPage();
   
   document.getElementById('saveBtn').addEventListener('click', saveUserData);
   document.getElementById('syncBtn').addEventListener('click', syncWithBackend);
+  document.getElementById('apiUrl').addEventListener('change', saveApiUrl);
   
   document.getElementById('autofillEnabled').addEventListener('change', saveSettings);
   document.getElementById('showFloatingBtn').addEventListener('change', saveSettings);
   document.getElementById('highlightBtn').addEventListener('change', saveSettings);
 });
+
+const loadApiUrl = () => {
+  chrome.storage.local.get(['autoapply_api_url'], (result) => {
+    document.getElementById('apiUrl').value = result.autoapply_api_url || 'http://localhost:5000';
+  });
+};
+
+const saveApiUrl = () => {
+  const apiUrl = document.getElementById('apiUrl').value.trim();
+  chrome.storage.local.set({ autoapply_api_url: apiUrl }, () => {
+    showNotification('API URL saved!', 'success');
+  });
+};
 
 const API_URL = 'http://localhost:5000/api';
 

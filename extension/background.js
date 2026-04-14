@@ -1,5 +1,5 @@
 const AUTOAPPLY_CONFIG = {
-  API_URL: 'http://localhost:5000/api',
+  API_URL: getApiUrl(),
   RATE_LIMIT: {
     maxActionsPerHour: 20,
     cooldownMinutes: 30,
@@ -8,6 +8,38 @@ const AUTOAPPLY_CONFIG = {
   USER_DATA_KEY: 'autoapply_user_data',
   SETTINGS_KEY: 'autoapply_settings',
   STATS_KEY: 'autoapply_stats',
+};
+
+function getApiUrl() {
+  // Check if custom API URL is stored in settings
+  const stored = localStorage.getItem('autoapply_api_url');
+  if (stored) {
+    return stored;
+  }
+  
+  // Detect environment based on hostname
+  const hostname = window?.location?.hostname || '';
+  
+  // Production: check for Vercel or custom domain
+  if (hostname.includes('vercel.app') || hostname.includes('production')) {
+    // Try to infer from current page or use environment variable
+    return 'https://autoapply-api.vercel.app/api';
+  }
+  
+  // Default to localhost for development
+  return 'http://localhost:5000/api';
+}
+
+// Allow updating API URL dynamically
+const setApiUrl = (url) => {
+  localStorage.setItem('autoapply_api_url', url);
+  AUTOAPPLY_CONFIG.API_URL = url;
+};
+
+const getStoredApiUrl = (callback) => {
+  chrome.storage.local.get(['autoapply_api_url'], (result) => {
+    callback(result.autoapply_api_url || AUTOAPPLY_CONFIG.API_URL);
+  });
 };
 
 let sessionState = {
@@ -191,85 +223,99 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
+const getApiBaseUrl = (callback) => {
+  chrome.storage.local.get(['autoapply_api_url'], (result) => {
+    callback(result.autoapply_api_url || 'http://localhost:5000');
+  });
+};
+
 const syncWithBackend = async (userData) => {
-  try {
-    const response = await fetch(`${AUTOAPPLY_CONFIG.API_URL}/users/me`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+  return new Promise((resolve) => {
+    getApiBaseUrl(async (baseUrl) => {
+      try {
+        const response = await fetch(`${baseUrl}/api/users/me`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          return resolve({ success: false, error: 'Failed to sync with backend' });
+        }
+
+        const profile = await response.json();
+        
+        const mergedData = {
+          name: profile.name || userData.name || '',
+          email: profile.email || userData.email || '',
+          phone: profile.phone || userData.phone || '',
+          linkedin: profile.linkedin_url || userData.linkedin || '',
+          coverLetter: userData.coverLetter || '',
+        };
+        
+        await chrome.storage.local.set({
+          [AUTOAPPLY_CONFIG.USER_DATA_KEY]: mergedData,
+        });
+
+        resolve({ success: true, synced: true, data: mergedData });
+      } catch (error) {
+        console.error('[AutoApply] Sync error:', error);
+        resolve({ success: false, error: error.message });
+      }
     });
-
-    if (!response.ok) {
-      return { success: false, error: 'Failed to sync with backend' };
-    }
-
-    const profile = await response.json();
-    
-    const mergedData = {
-      name: profile.name || userData.name || '',
-      email: profile.email || userData.email || '',
-      phone: profile.phone || userData.phone || '',
-      linkedin: profile.linkedin_url || userData.linkedin || '',
-      coverLetter: userData.coverLetter || '',
-    };
-    
-    await chrome.storage.local.set({
-      [AUTOAPPLY_CONFIG.USER_DATA_KEY]: mergedData,
-    });
-
-    return { success: true, synced: true, data: mergedData };
-  } catch (error) {
-    console.error('[AutoApply] Sync error:', error);
-    return { success: false, error: error.message };
-  }
+  });
 };
 
 const trackApplication = async (applicationData) => {
   recordAction();
   
-  try {
-    const response = await fetch(`${AUTOAPPLY_CONFIG.API_URL}/applications/track`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        job_url: applicationData.jobUrl,
-        job_title: applicationData.jobTitle,
-        company: applicationData.company,
-        status: applicationData.status || 'started',
-        source: 'extension',
-      }),
+  return new Promise((resolve) => {
+    getApiBaseUrl(async (baseUrl) => {
+      try {
+        const response = await fetch(`${baseUrl}/api/applications/track`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            job_url: applicationData.jobUrl,
+            job_title: applicationData.jobTitle,
+            company: applicationData.company,
+            status: applicationData.status || 'started',
+            source: 'extension',
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to track application');
+        }
+
+        const result = await response.json();
+
+        chrome.storage.local.get([AUTOAPPLY_CONFIG.STATS_KEY], (res) => {
+          const stats = res[AUTOAPPLY_CONFIG.STATS_KEY] || { fieldsFilled: 0, applicationsStarted: 0, sessionsUsed: 0 };
+          stats.applicationsStarted++;
+          chrome.storage.local.set({ [AUTOAPPLY_CONFIG.STATS_KEY]: stats });
+        });
+
+        resolve({ success: true, applicationId: result.application?.id });
+      } catch (error) {
+        console.error('[AutoApply] Track error:', error);
+        
+        chrome.storage.local.get(['pendingApplications'], (res) => {
+          const pending = res.pendingApplications || [];
+          pending.push({
+            ...applicationData,
+            timestamp: Date.now(),
+          });
+          chrome.storage.local.set({ pendingApplications: pending });
+        });
+        
+        resolve({ success: false, error: error.message, queued: true });
+      }
     });
-
-    if (!response.ok) {
-      throw new Error('Failed to track application');
-    }
-
-    const result = await response.json();
-
-    chrome.storage.local.get([AUTOAPPLY_CONFIG.STATS_KEY], (res) => {
-      const stats = res[AUTOAPPLY_CONFIG.STATS_KEY] || { fieldsFilled: 0, applicationsStarted: 0, sessionsUsed: 0 };
-      stats.applicationsStarted++;
-      chrome.storage.local.set({ [AUTOAPPLY_CONFIG.STATS_KEY]: stats });
-    });
-
-    return { success: true, applicationId: result.application?.id };
-  } catch (error) {
-    console.error('[AutoApply] Track error:', error);
-    
-    chrome.storage.local.get(['pendingApplications'], (res) => {
-      const pending = res.pendingApplications || [];
-      pending.push({
-        ...applicationData,
-        timestamp: Date.now(),
-      });
-      chrome.storage.local.set({ pendingApplications: pending });
-    });
-    
-    return { success: false, error: error.message, queued: true };
-  }
+  });
 };
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
