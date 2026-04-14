@@ -334,6 +334,11 @@
         <small style="color: #666; font-size: 11px;">Set your production API URL here</small>
       </div>
       <div class="form-group">
+        <label>Auth Token (Optional)</label>
+        <input type="password" id="authToken" class="auth-token-input" placeholder="Paste your Supabase auth token">
+        <small style="color: #666; font-size: 11px;">Get from browser DevTools after login</small>
+      </div>
+      <div class="form-group">
         <label>Max Actions per Hour</label>
         <input type="number" id="maxActionsPerHour" min="1" max="100" value="20" placeholder="20">
         <small style="color: #666; font-size: 11px;">Rate limit: actions allowed per hour</small>

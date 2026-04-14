@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadUserData();
   loadSettings();
   loadApiUrl();
+  loadAuthToken();
   loadStats();
   updateSessionStatus();
   detectCurrentPage();
@@ -9,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('saveBtn').addEventListener('click', saveUserData);
   document.getElementById('syncBtn').addEventListener('click', syncWithBackend);
   document.getElementById('apiUrl').addEventListener('change', saveApiUrl);
+  document.getElementById('authToken').addEventListener('change', saveAuthToken);
   
   document.getElementById('maxActionsPerHour').addEventListener('change', saveSettings);
   document.getElementById('cooldownMinutes').addEventListener('change', saveSettings);
@@ -28,6 +30,23 @@ const saveApiUrl = () => {
   const apiUrl = document.getElementById('apiUrl').value.trim();
   chrome.storage.local.set({ autoapply_api_url: apiUrl }, () => {
     showNotification('API URL saved!', 'success');
+  });
+};
+
+const loadAuthToken = () => {
+  chrome.storage.local.get(['autoapply_auth_token'], (result) => {
+    document.getElementById('authToken').value = result.autoapply_auth_token || '';
+  });
+};
+
+const saveAuthToken = () => {
+  const token = document.getElementById('authToken').value.trim();
+  chrome.storage.local.set({ autoapply_auth_token: token }, () => {
+    if (token) {
+      showNotification('Auth token saved!', 'success');
+    } else {
+      showNotification('Auth token cleared', 'success');
+    }
   });
 };
 

@@ -8,6 +8,7 @@ const AUTOAPPLY_CONFIG = {
   USER_DATA_KEY: 'autoapply_user_data',
   SETTINGS_KEY: 'autoapply_settings',
   STATS_KEY: 'autoapply_stats',
+  AUTH_TOKEN_KEY: 'autoapply_auth_token',
 };
 
 const DEFAULT_RATE_LIMIT = {
@@ -251,40 +252,65 @@ const getApiBaseUrl = (callback) => {
   });
 };
 
+const getAuthToken = (callback) => {
+  chrome.storage.local.get([AUTOAPPLY_CONFIG.AUTH_TOKEN_KEY], (result) => {
+    callback(result[AUTOAPPLY_CONFIG.AUTH_TOKEN_KEY] || null);
+  });
+};
+
+const setAuthToken = (token) => {
+  chrome.storage.local.set({ [AUTOAPPLY_CONFIG.AUTH_TOKEN_KEY]: token });
+};
+
+const clearAuthToken = () => {
+  chrome.storage.local.remove([AUTOAPPLY_CONFIG.AUTH_TOKEN_KEY]);
+};
+
 const syncWithBackend = async (userData) => {
   return new Promise((resolve) => {
     getApiBaseUrl(async (baseUrl) => {
-      try {
-        const response = await fetch(`${baseUrl}/api/users/me`, {
-          method: 'GET',
-          headers: {
+      getAuthToken(async (token) => {
+        try {
+          const headers = {
             'Content-Type': 'application/json',
-          },
-        });
+          };
+          
+          if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+          }
+          
+          const response = await fetch(`${baseUrl}/api/users/me`, {
+            method: 'GET',
+            headers,
+          });
 
-        if (!response.ok) {
-          return resolve({ success: false, error: 'Failed to sync with backend' });
+          if (!response.ok) {
+            if (response.status === 401) {
+              clearAuthToken();
+            }
+            return resolve({ success: false, error: 'Failed to sync with backend' });
+          }
+
+          const profile = await response.json();
+          
+          const mergedData = {
+            name: profile.name || userData.name || '',
+            email: profile.email || userData.email || '',
+            phone: profile.phone || userData.phone || '',
+            linkedin: profile.linkedin_url || userData.linkedin || '',
+            coverLetter: userData.coverLetter || '',
+          };
+          
+          await chrome.storage.local.set({
+            [AUTOAPPLY_CONFIG.USER_DATA_KEY]: mergedData,
+          });
+
+          resolve({ success: true, synced: true, data: mergedData });
+        } catch (error) {
+          console.error('[AutoApply] Sync error:', error);
+          resolve({ success: false, error: error.message });
         }
-
-        const profile = await response.json();
-        
-        const mergedData = {
-          name: profile.name || userData.name || '',
-          email: profile.email || userData.email || '',
-          phone: profile.phone || userData.phone || '',
-          linkedin: profile.linkedin_url || userData.linkedin || '',
-          coverLetter: userData.coverLetter || '',
-        };
-        
-        await chrome.storage.local.set({
-          [AUTOAPPLY_CONFIG.USER_DATA_KEY]: mergedData,
-        });
-
-        resolve({ success: true, synced: true, data: mergedData });
-      } catch (error) {
-        console.error('[AutoApply] Sync error:', error);
-        resolve({ success: false, error: error.message });
-      }
+      });
     });
   });
 };
@@ -294,48 +320,56 @@ const trackApplication = async (applicationData) => {
   
   return new Promise((resolve) => {
     getApiBaseUrl(async (baseUrl) => {
-      try {
-        const response = await fetch(`${baseUrl}/api/applications/track`, {
-          method: 'POST',
-          headers: {
+      getAuthToken(async (token) => {
+        try {
+          const headers = {
             'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            job_url: applicationData.jobUrl,
-            job_title: applicationData.jobTitle,
-            company: applicationData.company,
-            status: applicationData.status || 'started',
-            source: 'extension',
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to track application');
-        }
-
-        const result = await response.json();
-
-        chrome.storage.local.get([AUTOAPPLY_CONFIG.STATS_KEY], (res) => {
-          const stats = res[AUTOAPPLY_CONFIG.STATS_KEY] || { fieldsFilled: 0, applicationsStarted: 0, sessionsUsed: 0 };
-          stats.applicationsStarted++;
-          chrome.storage.local.set({ [AUTOAPPLY_CONFIG.STATS_KEY]: stats });
-        });
-
-        resolve({ success: true, applicationId: result.application?.id });
-      } catch (error) {
-        console.error('[AutoApply] Track error:', error);
-        
-        chrome.storage.local.get(['pendingApplications'], (res) => {
-          const pending = res.pendingApplications || [];
-          pending.push({
-            ...applicationData,
-            timestamp: Date.now(),
+          };
+          
+          if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+          }
+          
+          const response = await fetch(`${baseUrl}/api/applications/track`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              job_url: applicationData.jobUrl,
+              job_title: applicationData.jobTitle,
+              company: applicationData.company,
+              status: applicationData.status || 'started',
+              source: 'extension',
+            }),
           });
-          chrome.storage.local.set({ pendingApplications: pending });
-        });
-        
-        resolve({ success: false, error: error.message, queued: true });
-      }
+
+          if (!response.ok) {
+            throw new Error('Failed to track application');
+          }
+
+          const result = await response.json();
+
+          chrome.storage.local.get([AUTOAPPLY_CONFIG.STATS_KEY], (res) => {
+            const stats = res[AUTOAPPLY_CONFIG.STATS_KEY] || { fieldsFilled: 0, applicationsStarted: 0, sessionsUsed: 0 };
+            stats.applicationsStarted++;
+            chrome.storage.local.set({ [AUTOAPPLY_CONFIG.STATS_KEY]: stats });
+          });
+
+          resolve({ success: true, applicationId: result.application?.id });
+        } catch (error) {
+          console.error('[AutoApply] Track error:', error);
+          
+          chrome.storage.local.get(['pendingApplications'], (res) => {
+            const pending = res.pendingApplications || [];
+            pending.push({
+              ...applicationData,
+              timestamp: Date.now(),
+            });
+            chrome.storage.local.set({ pendingApplications: pending });
+          });
+          
+          resolve({ success: false, error: error.message, queued: true });
+        }
+      });
     });
   });
 };
@@ -362,6 +396,21 @@ chrome.action.onClicked.addListener((tab) => {
   chrome.tabs.sendMessage(tab.id, { action: 'showPanel' }).catch(() => {
     console.log('[AutoApply] Could not show panel');
   });
+});
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'saveAuthToken') {
+    setAuthToken(message.token);
+    sendResponse({ success: true });
+  } else if (message.action === 'getAuthToken') {
+    getAuthToken((token) => {
+      sendResponse({ token });
+    });
+    return true;
+  } else if (message.action === 'clearAuthToken') {
+    clearAuthToken();
+    sendResponse({ success: true });
+  }
 });
 
 setInterval(() => {
